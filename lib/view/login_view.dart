@@ -5,6 +5,7 @@ import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/view/main_navigation_view.dart';
 import 'package:ziesocial/view/register_view.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
+import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -44,6 +45,7 @@ class _LoginViewState extends State<LoginView> {
     if (!mounted) return;
 
     if (success) {
+      context.read<ProfileViewModel>().clear();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MainNavigationView()),

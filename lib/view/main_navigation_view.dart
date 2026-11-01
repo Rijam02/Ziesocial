@@ -9,6 +9,7 @@ import 'package:ziesocial/view/home_view.dart';
 import 'package:ziesocial/view/profile_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
+import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 
 class MainNavigationView extends StatefulWidget {
   final int initialIndex;
@@ -45,12 +46,25 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     }
 
     setState(() => _currentIndex = index);
+
+    if (index == 4) {
+      final currentUser = context.read<LoginViewModel>().user;
+      final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+      if (currentUserId > 0) {
+        context.read<ProfileViewModel>().fetchProfile(
+              currentUserId,
+              viewerId: currentUserId,
+            );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<LoginViewModel>().user;
-    final avatarUrl = ApiConstants.getImageUrl(currentUser?.avatar);
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    final ownProfile = context.watch<ProfileViewModel>().getProfile(currentUserId);
+    final avatarUrl = ApiConstants.getImageUrl(ownProfile?.user.avatar ?? currentUser?.avatar);
 
     final List<Widget> pages = [
       const HomeView(),

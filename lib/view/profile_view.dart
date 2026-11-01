@@ -33,6 +33,14 @@ class _ProfileViewState extends State<ProfileView> {
     });
   }
 
+  @override
+  void didUpdateWidget(covariant ProfileView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) {
+      _loadProfile();
+    }
+  }
+
   void _loadProfile() {
     final currentUser = context.read<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
@@ -62,6 +70,7 @@ class _ProfileViewState extends State<ProfileView> {
             onPressed: () {
               Navigator.pop(ctx);
               context.read<LoginViewModel>().logout();
+              context.read<ProfileViewModel>().clear();
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginView()),
@@ -147,10 +156,13 @@ class _ProfileViewState extends State<ProfileView> {
     final profileVm = context.watch<ProfileViewModel>();
     final currentUser = context.watch<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-    final profile = profileVm.profile;
 
     final targetUserId = widget.userId ?? currentUserId;
     final isOwnProfile = (targetUserId == currentUserId);
+
+    final profile = profileVm.getProfile(targetUserId);
+    final isLoading = profileVm.isUserLoading(targetUserId);
+    final errorMessage = profileVm.getErrorMessage(targetUserId);
 
     final avatarUrl = ApiConstants.getImageUrl(profile?.user.avatar);
     final displayedUsername = profile?.user.username ?? widget.username ?? 'Profil';
@@ -191,16 +203,16 @@ class _ProfileViewState extends State<ProfileView> {
           ],
         ],
       ),
-      body: profileVm.isLoading && profile == null
+      body: (isLoading && profile == null)
           ? const Center(child: CircularProgressIndicator())
-          : profileVm.errorMessage != null && profile == null
+          : (errorMessage != null && profile == null)
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
                       const Gap(12),
-                      Text(profileVm.errorMessage!),
+                      Text(errorMessage),
                       const Gap(12),
                       ElevatedButton(
                         onPressed: _loadProfile,
@@ -209,7 +221,9 @@ class _ProfileViewState extends State<ProfileView> {
                     ],
                   ),
                 )
-              : RefreshIndicator(
+              : (profile == null)
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
                   onRefresh: () async => _loadProfile(),
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),

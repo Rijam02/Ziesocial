@@ -9,17 +9,34 @@ class ProfileViewModel extends ChangeNotifier {
 
   ProfileViewModel(this._apiClient);
 
-  ProfileModel? _profile;
-  bool _isLoading = false;
-  String? _errorMessage;
+  // Cache profiles keyed by userId so different users do not overwrite each other
+  final Map<int, ProfileModel> _profiles = {};
+  final Set<int> _loadingUserIds = {};
+  final Map<int, String?> _errorMessages = {};
+  ProfileModel? _lastProfile;
 
-  ProfileModel? get profile => _profile;
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
+  ProfileModel? get profile => _lastProfile;
+  ProfileModel? getProfile(int userId) => _profiles[userId];
+  bool isUserLoading(int userId) => _loadingUserIds.contains(userId);
+  String? getErrorMessage(int userId) => _errorMessages[userId];
+
+  bool get isLoading => _loadingUserIds.isNotEmpty;
+  String? get errorMessage => _errorMessages.values.firstWhere(
+        (msg) => msg != null,
+        orElse: () => null,
+      );
+
+  void clear() {
+    _profiles.clear();
+    _loadingUserIds.clear();
+    _errorMessages.clear();
+    _lastProfile = null;
+    notifyListeners();
+  }
 
   Future<void> fetchProfile(int userId, {int? viewerId}) async {
-    _isLoading = true;
-    _errorMessage = null;
+    _loadingUserIds.add(userId);
+    _errorMessages[userId] = null;
     notifyListeners();
 
     try {
@@ -29,11 +46,13 @@ class ProfileViewModel extends ChangeNotifier {
       }
 
       final response = await _apiClient.get(url);
-      _profile = ProfileModel.fromJson(response);
+      final profileModel = ProfileModel.fromJson(response);
+      _profiles[userId] = profileModel;
+      _lastProfile = profileModel;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessages[userId] = e.toString().replaceFirst('Exception: ', '');
     } finally {
-      _isLoading = false;
+      _loadingUserIds.remove(userId);
       notifyListeners();
     }
   }
@@ -43,20 +62,33 @@ class ProfileViewModel extends ChangeNotifier {
     required int targetUserId,
     required int followerId,
   }) async {
-    if (_profile == null) return false;
+    final targetProfile = _profiles[targetUserId];
+    if (targetProfile == null) return false;
 
-    final currentIsFollowing = _profile!.isFollowing;
-    final int currentFollowers = _profile!.followersCount;
+    final currentIsFollowing = targetProfile.isFollowing;
+    final int currentFollowers = targetProfile.followersCount;
     final bool newIsFollowing = !currentIsFollowing;
     final int newFollowers = newIsFollowing
         ? currentFollowers + 1
         : (currentFollowers > 0 ? currentFollowers - 1 : 0);
 
-    // Optimistic local update
-    _profile = _profile!.copyWith(
+    // Optimistic local update on target user
+    _profiles[targetUserId] = targetProfile.copyWith(
       isFollowing: newIsFollowing,
       followersCount: newFollowers,
     );
+
+    // Optimistically update follower's following count if cached
+    final followerProfile = _profiles[followerId];
+    if (followerProfile != null) {
+      final currentFollowing = followerProfile.followingCount;
+      final newFollowing = newIsFollowing
+          ? currentFollowing + 1
+          : (currentFollowing > 0 ? currentFollowing - 1 : 0);
+      _profiles[followerId] = followerProfile.copyWith(
+        followingCount: newFollowing,
+      );
+    }
     notifyListeners();
 
     try {
@@ -73,18 +105,25 @@ class ProfileViewModel extends ChangeNotifier {
           : newFollowers;
       final bool serverIsFollowing = response['is_following'] == true;
 
-      _profile = _profile!.copyWith(
-        followersCount: serverFollowers,
-        isFollowing: serverIsFollowing,
-      );
+      if (_profiles.containsKey(targetUserId)) {
+        _profiles[targetUserId] = _profiles[targetUserId]!.copyWith(
+          followersCount: serverFollowers,
+          isFollowing: serverIsFollowing,
+        );
+      }
       notifyListeners();
       return true;
     } catch (e) {
       // Revert if error
-      _profile = _profile!.copyWith(
-        isFollowing: currentIsFollowing,
-        followersCount: currentFollowers,
-      );
+      if (_profiles.containsKey(targetUserId)) {
+        _profiles[targetUserId] = targetProfile.copyWith(
+          isFollowing: currentIsFollowing,
+          followersCount: currentFollowers,
+        );
+      }
+      if (followerProfile != null && _profiles.containsKey(followerId)) {
+        _profiles[followerId] = followerProfile;
+      }
       notifyListeners();
       return false;
     }
@@ -95,12 +134,13 @@ class ProfileViewModel extends ChangeNotifier {
     required int postId,
     required int userId,
   }) async {
-    if (_profile == null) return false;
+    final targetProfile = _profiles[userId];
+    if (targetProfile == null) return false;
 
-    final updatedPosts = _profile!.posts.where((p) => p.id != postId).toList();
-    final updatedPostsCount = _profile!.postsCount > 0 ? _profile!.postsCount - 1 : 0;
+    final updatedPosts = targetProfile.posts.where((p) => p.id != postId).toList();
+    final updatedPostsCount = targetProfile.postsCount > 0 ? targetProfile.postsCount - 1 : 0;
 
-    _profile = _profile!.copyWith(
+    _profiles[userId] = targetProfile.copyWith(
       posts: updatedPosts,
       postsCount: updatedPostsCount,
     );
@@ -127,7 +167,7 @@ class ProfileViewModel extends ChangeNotifier {
     required String bio,
     String? avatarPath,
   }) async {
-    _isLoading = true;
+    _loadingUserIds.add(userId);
     notifyListeners();
 
     try {
@@ -158,17 +198,18 @@ class ProfileViewModel extends ChangeNotifier {
         final updatedUser = UserModel.fromJson(
           response['user'] as Map<String, dynamic>,
         );
-        if (_profile != null) {
-          _profile = _profile!.copyWith(user: updatedUser);
+        final currentProfile = _profiles[userId];
+        if (currentProfile != null) {
+          _profiles[userId] = currentProfile.copyWith(user: updatedUser);
         }
         return updatedUser;
       }
       return null;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessages[userId] = e.toString().replaceFirst('Exception: ', '');
       return null;
     } finally {
-      _isLoading = false;
+      _loadingUserIds.remove(userId);
       notifyListeners();
     }
   }
