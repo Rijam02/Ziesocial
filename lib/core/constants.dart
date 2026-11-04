@@ -31,6 +31,7 @@ class ApiConstants {
   static String get userProfile => '$baseUrl/users/profile.php';
   static String get updateProfile => '$baseUrl/users/update.php';
   static String get searchUsers => '$baseUrl/users/search.php';
+  static String get deleteAccount => '$baseUrl/users/delete.php';
 
   // Notifications / Activity
   static String get readNotifications => '$baseUrl/notifications/read.php';

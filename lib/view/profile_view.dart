@@ -6,6 +6,7 @@ import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/model/post_model.dart';
 import 'package:ziesocial/view/edit_profile_view.dart';
 import 'package:ziesocial/view/login_view.dart';
+import 'package:ziesocial/viewmodel/home_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
 import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 import 'package:ziesocial/widget/post_card.dart';
@@ -54,6 +55,67 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
+  void _showOwnProfileMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout, color: AppColors.textPrimary),
+                title: const Text(
+                  'Keluar',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _handleLogout();
+                },
+              ),
+              const Divider(height: 1, color: AppColors.borderLight),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_forever_outlined,
+                  color: Colors.red,
+                ),
+                title: const Text(
+                  'Hapus Akun',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.red,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _handleDeleteAccount();
+                },
+              ),
+              const Gap(8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _handleLogout() {
     showDialog(
       context: context,
@@ -78,6 +140,70 @@ class _ProfileViewState extends State<ProfileView> {
               );
             },
             child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        title: const Text('Hapus Akun Permanen?'),
+        content: const Text(
+          'Semua data dari akun ini (profil, postingan, pengikut, mengikuti, suka, dan komentar) akan dihapus secara permanen dari aplikasi ZieSocial dan database.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final currentUser = context.read<LoginViewModel>().user;
+              final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+              if (currentUserId <= 0) return;
+
+              final profileVm = context.read<ProfileViewModel>();
+              final loginVm = context.read<LoginViewModel>();
+              final homeVm = context.read<HomeViewModel>();
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
+
+              final deleted = await profileVm.deleteAccount(currentUserId);
+              if (!mounted) return;
+
+              if (deleted) {
+                loginVm.logout();
+                homeVm.fetchPosts();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Akun beserta seluruh datanya berhasil dihapus.'),
+                  ),
+                );
+                navigator.pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginView()),
+                  (route) => false,
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      profileVm.getErrorMessage(currentUserId) ??
+                          'Gagal menghapus akun.',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Hapus Akun',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -187,9 +313,9 @@ class _ProfileViewState extends State<ProfileView> {
         actions: [
           if (isOwnProfile) ...[
             IconButton(
-              onPressed: _handleLogout,
-              icon: const Icon(Icons.logout, color: AppColors.textPrimary),
-              tooltip: 'Keluar',
+              onPressed: _showOwnProfileMenu,
+              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+              tooltip: 'Menu Profil',
             ),
           ] else ...[
             IconButton(

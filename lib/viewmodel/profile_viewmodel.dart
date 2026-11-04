@@ -343,4 +343,28 @@ class ProfileViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Delete account permanently along with all user data
+  Future<bool> deleteAccount(int userId) async {
+    if (userId <= 0) return false;
+    _loadingUserIds.add(userId);
+    notifyListeners();
+
+    try {
+      await _apiClient.post(
+        ApiConstants.deleteAccount,
+        body: {
+          'user_id': userId,
+        },
+      );
+      clear();
+      return true;
+    } catch (e) {
+      _errorMessages[userId] = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _loadingUserIds.remove(userId);
+      notifyListeners();
+    }
+  }
 }
