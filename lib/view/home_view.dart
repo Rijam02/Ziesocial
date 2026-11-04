@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
+import 'package:ziesocial/view/activity_view.dart';
 import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
+import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 import 'package:ziesocial/widget/post_card.dart';
 import 'package:ziesocial/widget/story_tray.dart';
 
@@ -17,18 +20,51 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  Timer? _notificationPoller;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFeed();
+      _loadNotifications(silent: true);
     });
+
+    // Polling real-time untuk notifikasi aktivitas
+    _notificationPoller = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        _loadNotifications(silent: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationPoller?.cancel();
+    super.dispose();
   }
 
   void _loadFeed() {
     final currentUser = context.read<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0');
     context.read<HomeViewModel>().fetchPosts(viewerId: currentUserId);
+  }
+
+  void _loadNotifications({bool silent = false}) {
+    final currentUser = context.read<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    if (currentUserId > 0) {
+      context
+          .read<ProfileViewModel>()
+          .fetchNotifications(currentUserId, silent: silent);
+    }
+  }
+
+  void _openActivityView() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ActivityView()),
+    );
   }
 
   Future<void> _navigateToCreatePost() async {
@@ -46,6 +82,8 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     final homeVm = context.watch<HomeViewModel>();
     final currentUser = context.watch<LoginViewModel>().user;
+    final notificationsCount =
+        context.watch<ProfileViewModel>().notifications.length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,15 +100,27 @@ class _HomeViewState extends State<HomeView> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tidak ada notifikasi baru.'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            icon: const Icon(Icons.favorite_border, size: 26),
+            onPressed: _openActivityView,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.favorite_border, size: 26),
+                if (notificationsCount > 0)
+                  Positioned(
+                    right: -1,
+                    top: -1,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: AppColors.likeRed,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             tooltip: 'Aktivitas',
           ),
           IconButton(
@@ -88,7 +138,10 @@ class _HomeViewState extends State<HomeView> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _loadFeed(),
+        onRefresh: () async {
+          _loadFeed();
+          _loadNotifications(silent: true);
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [

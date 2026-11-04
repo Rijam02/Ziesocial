@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
-import 'package:ziesocial/view/activity_view.dart';
 import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/view/explore_view.dart';
 import 'package:ziesocial/view/home_view.dart';
@@ -47,7 +46,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
     setState(() => _currentIndex = index);
 
-    if (index == 4) {
+    if (index == 3) {
       final currentUser = context.read<LoginViewModel>().user;
       final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
       if (currentUserId > 0) {
@@ -70,7 +69,6 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       const HomeView(),
       const ExploreView(),
       const SizedBox.shrink(), // Placeholder untuk tombol add
-      const ActivityView(),
       const ProfileView(), // Menampilkan profil user saat ini
     ];
 
@@ -112,19 +110,12 @@ class _MainNavigationViewState extends State<MainNavigationView> {
               label: 'Tambah',
             ),
             BottomNavigationBarItem(
-              icon: Icon(
-                _currentIndex == 3 ? Icons.favorite : Icons.favorite_border,
-                size: 26,
-              ),
-              label: 'Aktivitas',
-            ),
-            BottomNavigationBarItem(
               icon: Container(
                 padding: const EdgeInsets.all(1.5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _currentIndex == 4
+                    color: _currentIndex == 3
                         ? AppColors.textPrimary
                         : Colors.transparent,
                     width: 1.5,

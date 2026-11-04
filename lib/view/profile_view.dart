@@ -281,10 +281,20 @@ class _ProfileViewState extends State<ProfileView> {
                                   _buildStatColumn(
                                     profile?.followersCount.toString() ?? '0',
                                     'Pengikut',
+                                    onTap: () => _openFollowList(
+                                      targetUserId: targetUserId,
+                                      username: displayedUsername,
+                                      initialTabIndex: 0,
+                                    ),
                                   ),
                                   _buildStatColumn(
                                     profile?.followingCount.toString() ?? '0',
                                     'Mengikuti',
+                                    onTap: () => _openFollowList(
+                                      targetUserId: targetUserId,
+                                      username: displayedUsername,
+                                      initialTabIndex: 1,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -533,27 +543,65 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _buildStatColumn(String count, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          count,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+  Future<void> _openFollowList({
+    required int targetUserId,
+    required String username,
+    required int initialTabIndex,
+  }) async {
+    if (targetUserId <= 0) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FollowListScreen(
+          userId: targetUserId,
+          username: username,
+          initialTabIndex: initialTabIndex,
         ),
-        const Gap(2),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textPrimary,
+      ),
+    );
+
+    if (mounted) {
+      _loadProfile();
+    }
+  }
+
+  Widget _buildStatColumn(
+    String count,
+    String label, {
+    VoidCallback? onTap,
+  }) {
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            count,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-      ],
+          const Gap(2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: content,
     );
   }
 
@@ -611,6 +659,284 @@ class _ProfileViewState extends State<ProfileView> {
             style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class FollowListScreen extends StatefulWidget {
+  final int userId;
+  final String username;
+  final int initialTabIndex;
+
+  const FollowListScreen({
+    super.key,
+    required this.userId,
+    required this.username,
+    this.initialTabIndex = 0,
+  });
+
+  @override
+  State<FollowListScreen> createState() => _FollowListScreenState();
+}
+
+class _FollowListScreenState extends State<FollowListScreen> {
+  List<Map<String, dynamic>> _followers = [];
+  List<Map<String, dynamic>> _following = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBothLists();
+    });
+  }
+
+  Future<void> _loadBothLists() async {
+    setState(() => _isLoading = true);
+
+    final currentUser = context.read<LoginViewModel>().user;
+    final viewerId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    final profileVm = context.read<ProfileViewModel>();
+
+    final results = await Future.wait([
+      profileVm.fetchFollowList(
+        userId: widget.userId,
+        type: 'followers',
+        viewerId: viewerId,
+      ),
+      profileVm.fetchFollowList(
+        userId: widget.userId,
+        type: 'following',
+        viewerId: viewerId,
+      ),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _followers = results[0];
+      _following = results[1];
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _handleToggleFollow(int targetId, bool isCurrentlyFollowing) async {
+    final currentUser = context.read<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    if (currentUserId <= 0 || targetId <= 0) return;
+
+    // Optimistic UI update in both lists
+    setState(() {
+      for (final item in _followers) {
+        if (int.tryParse(item['id'].toString()) == targetId) {
+          item['is_following'] = !isCurrentlyFollowing;
+        }
+      }
+      for (final item in _following) {
+        if (int.tryParse(item['id'].toString()) == targetId) {
+          item['is_following'] = !isCurrentlyFollowing;
+        }
+      }
+    });
+
+    await context.read<ProfileViewModel>().toggleFollow(
+          targetUserId: targetId,
+          followerId: currentUserId,
+        );
+
+    if (mounted) {
+      _loadBothLists();
+    }
+  }
+
+  void _openUserProfile(int userId, String username) async {
+    if (userId <= 0) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileView(
+          userId: userId,
+          username: username,
+        ),
+      ),
+    );
+    if (mounted) {
+      _loadBothLists();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = context.watch<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+
+    return DefaultTabController(
+      length: 2,
+      initialIndex: widget.initialTabIndex,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(
+            widget.username,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          bottom: TabBar(
+            labelColor: AppColors.textPrimary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.textPrimary,
+            indicatorWeight: 1.8,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            tabs: [
+              Tab(text: '${_followers.length} Pengikut'),
+              Tab(text: '${_following.length} Mengikuti'),
+            ],
+          ),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: [
+                  _buildUserList(
+                    users: _followers,
+                    emptyText: 'Belum ada pengikut.',
+                    currentUserId: currentUserId,
+                  ),
+                  _buildUserList(
+                    users: _following,
+                    emptyText: 'Belum mengikuti siapa pun.',
+                    currentUserId: currentUserId,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildUserList({
+    required List<Map<String, dynamic>> users,
+    required String emptyText,
+    required int currentUserId,
+  }) {
+    if (users.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.people_outline,
+              size: 52,
+              color: AppColors.textSecondary,
+            ),
+            const Gap(12),
+            Text(
+              emptyText,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadBothLists,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: users.length,
+        separatorBuilder: (context, index) => const Divider(
+          height: 1,
+          indent: 76,
+          color: AppColors.borderLight,
+        ),
+        itemBuilder: (context, index) {
+          final item = users[index];
+          final itemUserId = int.tryParse(item['id']?.toString() ?? '0') ?? 0;
+          final username = item['username']?.toString() ?? '';
+          final name = item['name']?.toString() ?? '';
+          final avatarUrl = ApiConstants.getImageUrl(item['avatar']?.toString());
+          final isFollowing = item['is_following'] == true;
+          final isMe = itemUserId == currentUserId;
+
+          return ListTile(
+            onTap: () => _openUserProfile(itemUserId, username),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
+            leading: CircleAvatar(
+              radius: 22,
+              backgroundColor: AppColors.surface,
+              backgroundImage:
+                  avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl.isEmpty
+                  ? Text(
+                      username.isNotEmpty ? username[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    )
+                  : null,
+            ),
+            title: Text(
+              username,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.5,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            subtitle: name.isNotEmpty
+                ? Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  )
+                : null,
+            trailing: isMe
+                ? null
+                : SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          _handleToggleFollow(itemUserId, isFollowing),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isFollowing
+                            ? const Color(0xFFEFEFEF)
+                            : AppColors.primary,
+                        foregroundColor: isFollowing
+                            ? AppColors.textPrimary
+                            : Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        isFollowing ? 'Mengikuti' : 'Ikuti',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: isFollowing
+                              ? AppColors.textPrimary
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+          );
+        },
       ),
     );
   }

@@ -1,4 +1,3 @@
-
 class ApiConstants {
   // Base URL folder utama ZieSocial
   static const String rootUrl = 'http://localhost/ziesocial';
@@ -26,10 +25,15 @@ class ApiConstants {
 
   // Follows
   static String get toggleFollow => '$baseUrl/follows/toggle.php';
+  static String get followList => '$baseUrl/follows/list.php';
 
   // Users
   static String get userProfile => '$baseUrl/users/profile.php';
   static String get updateProfile => '$baseUrl/users/update.php';
+  static String get searchUsers => '$baseUrl/users/search.php';
+
+  // Notifications / Activity
+  static String get readNotifications => '$baseUrl/notifications/read.php';
 
   // Image URL
   static String getImageUrl(String? path) {
