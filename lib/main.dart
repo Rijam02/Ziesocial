@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/network.dart';
-import 'package:ziesocial/view/register_view.dart';
+import 'package:ziesocial/view/splash_view.dart';
 import 'package:ziesocial/viewmodel/comments_viewmodel.dart';
 import 'package:ziesocial/viewmodel/create_post_viewmodel.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
@@ -47,8 +47,7 @@ class MyApp extends StatelessWidget {
         title: 'ZieSocial',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        // Saat masuk aplikasi, menampilkan menu register terlebih dahulu
-        home: const RegisterView(),
+        home: const SplashView(),
       ),
     );
   }

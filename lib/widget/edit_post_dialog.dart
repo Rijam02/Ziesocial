@@ -43,90 +43,81 @@ class _EditPostDialogState extends State<EditPostDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: AppColors.background,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Edit Postingan',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.border, width: 1),
+      ),
+      backgroundColor: AppColors.pureWhite,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Keterangan Postingan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryText,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, size: 20),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            TextField(
-              controller: _controller,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Tulis caption baru...',
-                border: InputBorder.none,
-                filled: true,
-                fillColor: AppColors.surface,
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: AppColors.secondaryText,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
               ),
-            ),
-            const Gap(20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Batal'),
-                  ),
+              const Gap(14),
+              TextField(
+                controller: _controller,
+                maxLines: 4,
+                style: const TextStyle(fontSize: 14, height: 1.45),
+                decoration: const InputDecoration(
+                  hintText: 'Tulis keterangan baru untuk postingan ini...',
                 ),
-                const Gap(12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _handleSave,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+              ),
+              const Gap(18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed:
+                          _isSaving ? null : () => Navigator.pop(context),
+                      child: const Text('Batal'),
                     ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Simpan',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const Gap(10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _handleSave,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: AppColors.pureWhite,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Simpan'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

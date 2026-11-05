@@ -10,7 +10,12 @@ import 'package:ziesocial/viewmodel/login_viewmodel.dart';
 import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 
 class CreatePostView extends StatefulWidget {
-  const CreatePostView({super.key});
+  final bool initialHighlightMode;
+
+  const CreatePostView({
+    super.key,
+    this.initialHighlightMode = false,
+  });
 
   @override
   State<CreatePostView> createState() => _CreatePostViewState();
@@ -23,7 +28,14 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
-  bool _isHighlight = false;
+  late bool _isHighlight;
+  String? _localError;
+
+  @override
+  void initState() {
+    super.initState();
+    _isHighlight = widget.initialHighlightMode;
+  }
 
   @override
   void dispose() {
@@ -45,43 +57,44 @@ class _CreatePostViewState extends State<CreatePostView> {
 
     if (fileSize > 5 * 1024 * 1024) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ukuran gambar maksimal 5MB.')),
-      );
+      setState(() {
+        _localError = 'Ukuran gambar maksimal 5MB.';
+      });
       return;
     }
 
     setState(() {
       _selectedImage = image;
       _selectedImageBytes = bytes;
+      _localError = null;
     });
   }
 
   Future<void> _handleShare() async {
     if (_selectedImage == null || _selectedImageBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih gambar postingan terlebih dahulu.')),
-      );
+      setState(() {
+        _localError = 'Pilih foto terlebih dahulu sebelum menerbitkan postingan.';
+      });
       return;
     }
 
     final highlightTitle = _highlightTitleController.text.trim();
     if (_isHighlight && highlightTitle.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Masukkan nama sorotan terlebih dahulu.'),
-        ),
-      );
+      setState(() {
+        _localError = 'Masukkan judul sorotan profil terlebih dahulu.';
+      });
       return;
     }
 
     final currentUser = context.read<LoginViewModel>().user;
     if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan login terlebih dahulu.')),
-      );
+      setState(() {
+        _localError = 'Sesi akun tidak ditemukan. Silakan masuk kembali.';
+      });
       return;
     }
+
+    setState(() => _localError = null);
 
     final userId = int.tryParse(currentUser.id) ?? 0;
     final profileVm = context.read<ProfileViewModel>();
@@ -99,7 +112,6 @@ class _CreatePostViewState extends State<CreatePostView> {
     if (!mounted) return;
 
     if (success) {
-      // Perbarui profil agar postingan dan sorotan terbaru langsung muncul
       if (userId > 0) {
         profileVm.fetchProfile(userId, viewerId: userId);
       }
@@ -107,21 +119,17 @@ class _CreatePostViewState extends State<CreatePostView> {
         SnackBar(
           content: Text(
             _isHighlight
-                ? 'Postingan & Sorotan "$highlightTitle" berhasil dibagikan!'
-                : 'Postingan berhasil dibagikan!',
+                ? 'Postingan & Sorotan "$highlightTitle" berhasil diterbitkan.'
+                : 'Postingan baru berhasil diterbitkan.',
           ),
-          backgroundColor: Colors.green,
         ),
       );
       Navigator.pop(context, true);
     } else {
       final error = context.read<CreatePostViewModel>().errorMessage;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Gagal membuat postingan.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _localError = error ?? 'Gagal menerbitkan postingan.';
+      });
     }
   }
 
@@ -130,272 +138,477 @@ class _CreatePostViewState extends State<CreatePostView> {
     final isLoading = context.watch<CreatePostViewModel>().isLoading;
     final currentUser = context.watch<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-    final existingHighlights =
-        context.watch<ProfileViewModel>().getProfile(currentUserId)?.highlights ?? [];
+    final existingHighlights = context
+            .watch<ProfileViewModel>()
+            .getProfile(currentUserId)
+            ?.highlights ??
+        [];
     final avatarUrl = ApiConstants.getImageUrl(currentUser?.avatar);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Postingan Baru',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          TextButton(
-            onPressed: isLoading ? null : _handleShare,
-            child: isLoading
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'Bagikan',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+      backgroundColor: AppColors.warmIvory,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(58),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.pureWhite,
+            border: Border(
+              bottom: BorderSide(color: AppColors.border, width: 1),
+            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Top Section: Avatar + Caption Textarea + Image Thumbnail
-            Padding(
-              padding: const EdgeInsets.all(16),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.surface,
-                    backgroundImage:
-                        avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl.isEmpty
-                        ? Text(
-                            currentUser?.username.isNotEmpty == true
-                                ? currentUser!.username[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 22,
+                      color: AppColors.primaryText,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Gap(4),
+                  const Text(
+                    'Unggah Karya Baru',
+                    style: TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 18.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _handleShare,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.deepForest,
+                        foregroundColor: AppColors.pureWhite,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.pureWhite,
+                              ),
+                            )
+                          : const Text(
+                              'Terbitkan',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          )
-                        : null,
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: TextField(
-                      controller: _captionController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: 'Tulis keterangan postingan...',
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        contentPadding: EdgeInsets.zero,
-                      ),
                     ),
                   ),
-                  const Gap(8),
-                  if (_selectedImageBytes != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.memory(
-                        _selectedImageBytes!,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                 ],
               ),
             ),
-            const Divider(height: 1),
-
-            // Large Image Preview or Picker
-            if (_selectedImageBytes != null)
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxHeight: 380),
-                color: Colors.black,
-                child: Image.memory(
-                  _selectedImageBytes!,
-                  fit: BoxFit.contain,
-                ),
-              )
-            else
-              Container(
-                height: 280,
-                width: double.infinity,
-                color: AppColors.surface,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 64,
-                      color: AppColors.textSecondary,
+          ),
+        ),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_localError != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
                     ),
-                    const Gap(12),
-                    const Text(
-                      'Pilih foto dari Galeri atau Kamera',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.35),
                       ),
                     ),
-                    const Gap(16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Row(
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: () => _pickImage(ImageSource.gallery),
-                          icon: const Icon(Icons.photo_library),
-                          label: const Text('Galeri'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                          ),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 18,
+                          color: AppColors.error,
                         ),
-                        const Gap(12),
-                        OutlinedButton.icon(
-                          onPressed: () => _pickImage(ImageSource.camera),
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Kamera'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(color: AppColors.border),
+                        const Gap(8),
+                        Expanded(
+                          child: Text(
+                            _localError!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-            if (_selectedImageBytes != null) ...[
-              const Gap(12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Ganti Gambar'),
                   ),
+                  const Gap(16),
                 ],
-              ),
-            ],
 
-            const Divider(height: 1),
-
-            // Fitur Jadikan Sorotan (Highlight)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // 1. Image Picker & Preview Frame
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.pureWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
                     children: [
-                      Row(
-                        children: const [
-                          Icon(
-                            Icons.auto_awesome_outlined,
-                            color: AppColors.textPrimary,
-                          ),
-                          Gap(12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      if (_selectedImageBytes != null)
+                        Stack(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              constraints: const BoxConstraints(maxHeight: 380),
+                              color: const Color(0xFF181B18),
+                              child: Image.memory(
+                                _selectedImageBytes!,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Material(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(6),
+                                child: InkWell(
+                                  onTap: () => _pickImage(ImageSource.gallery),
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.refresh_rounded,
+                                          size: 15,
+                                          color: Colors.white,
+                                        ),
+                                        Gap(6),
+                                        Text(
+                                          'Ganti Foto',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          height: 250,
+                          width: double.infinity,
+                          color: AppColors.pureWhite,
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Jadikan Sorotan Profil',
+                              Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: AppColors.warmIvory,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: const Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  size: 26,
+                                  color: AppColors.deepForest,
+                                ),
+                              ),
+                              const Gap(14),
+                              const Text(
+                                'Pilih Foto Postingan',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.primaryText,
                                 ),
                               ),
-                              Text(
-                                'Tampilkan postingan ini di menu sorotan profil Anda',
+                              const Gap(4),
+                              const Text(
+                                'Format JPG, PNG, atau WEBP (maksimal 5MB)',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
+                                  fontSize: 12.5,
+                                  color: AppColors.secondaryText,
                                 ),
+                              ),
+                              const Gap(18),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: () =>
+                                        _pickImage(ImageSource.gallery),
+                                    icon: const Icon(
+                                      Icons.photo_library_outlined,
+                                      size: 17,
+                                    ),
+                                    label: const Text('Pilih dari Galeri'),
+                                  ),
+                                  const Gap(10),
+                                  OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _pickImage(ImageSource.camera),
+                                    icon: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 17,
+                                    ),
+                                    label: const Text('Kamera'),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Gap(16),
+
+                // 2. Editorial Caption Section
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.pureWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 15,
+                            backgroundColor: AppColors.warmIvory,
+                            backgroundImage: avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
+                                : null,
+                            child: avatarUrl.isEmpty
+                                ? Text(
+                                    currentUser?.username.isNotEmpty == true
+                                        ? currentUser!.username[0].toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.deepForest,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const Gap(10),
+                          Text(
+                            '@${currentUser?.username ?? "pengguna"}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
                         ],
                       ),
-                      Switch(
-                        value: _isHighlight,
-                        activeColor: AppColors.primary,
-                        onChanged: (val) {
-                          setState(() {
-                            _isHighlight = val;
-                          });
-                        },
+                      const Gap(12),
+                      TextField(
+                        controller: _captionController,
+                        maxLines: 4,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.primaryText,
+                          height: 1.45,
+                        ),
+                        decoration: const InputDecoration(
+                          hintText:
+                              'Ceritakan kisah atau konteks di balik foto ini...',
+                          fillColor: AppColors.warmIvory,
+                        ),
                       ),
                     ],
                   ),
-                  if (_isHighlight) ...[
-                    const Gap(12),
-                    TextField(
-                      controller: _highlightTitleController,
-                      decoration: InputDecoration(
-                        labelText: 'Nama Sorotan',
-                        hintText: 'Contoh: Liburan, Kuliner, Momen...',
-                        prefixIcon: const Icon(Icons.bookmark_border),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    if (existingHighlights.isNotEmpty) ...[
-                      const Gap(8),
-                      const Text(
-                        'Atau pilih sorotan yang sudah ada:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const Gap(6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: existingHighlights.map((hl) {
-                          return ActionChip(
-                            label: Text(hl.title),
-                            onPressed: () {
+                ),
+                const Gap(16),
+
+                // 3. Highlight (Sorotan Profil) Option
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.pureWhite,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.warmIvory,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: const Icon(
+                              Icons.bookmarks_outlined,
+                              size: 18,
+                              color: AppColors.deepForest,
+                            ),
+                          ),
+                          const Gap(12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Jadikan Sorotan Profil',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryText,
+                                  ),
+                                ),
+                                Gap(2),
+                                Text(
+                                  'Simpan postingan ini pada koleksi Sorotan di halaman profil Anda',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isHighlight,
+                            activeTrackColor: AppColors.sageGreen,
+                            activeThumbColor: AppColors.pureWhite,
+                            onChanged: (val) {
                               setState(() {
-                                _highlightTitleController.text = hl.title;
+                                _isHighlight = val;
                               });
                             },
-                          );
-                        }).toList(),
+                          ),
+                        ],
                       ),
+                      if (_isHighlight) ...[
+                        const Gap(16),
+                        const Text(
+                          'Judul Sorotan',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                        const Gap(6),
+                        TextField(
+                          controller: _highlightTitleController,
+                          style: const TextStyle(fontSize: 13.5),
+                          decoration: const InputDecoration(
+                            hintText:
+                                'Contoh: Arsitektur, Perjalanan, Jurnal...',
+                            prefixIcon: Icon(
+                              Icons.label_outline_rounded,
+                              size: 18,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ),
+                        if (existingHighlights.isNotEmpty) ...[
+                          const Gap(12),
+                          const Text(
+                            'Atau tambahkan ke sorotan yang sudah ada:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                          const Gap(8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: existingHighlights.map((hl) {
+                              final isSelected =
+                                  _highlightTitleController.text.trim() ==
+                                      hl.title;
+                              return InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _highlightTitleController.text = hl.title;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? AppColors.softBeige
+                                            .withValues(alpha: 0.45)
+                                        : AppColors.warmIvory,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.sageGreen
+                                          : AppColors.border,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    hl.title,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: AppColors.primaryText,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ],
                     ],
-                  ],
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-
-            const Divider(height: 1),
-          ],
+          ),
         ),
       ),
     );

@@ -294,37 +294,47 @@ class ProfileViewModel extends ChangeNotifier {
   Future<UserModel?> updateProfile({
     required int userId,
     required String name,
+    String? username,
     required String bio,
     String? avatarPath,
     Uint8List? avatarBytes,
     String? avatarFileName,
   }) async {
     _loadingUserIds.add(userId);
+    _errorMessages[userId] = null;
     notifyListeners();
 
     try {
       Map<String, dynamic> response;
       if ((avatarPath != null && avatarPath.isNotEmpty) || avatarBytes != null) {
+        final fields = <String, String>{
+          'user_id': userId.toString(),
+          'name': name,
+          'bio': bio,
+        };
+        if (username != null && username.trim().isNotEmpty) {
+          fields['username'] = username.trim();
+        }
         response = await _apiClient.upload(
           ApiConstants.updateProfile,
           filePath: avatarPath ?? 'avatar.jpg',
           fieldName: 'avatar',
           fileBytes: avatarBytes,
           fileName: avatarFileName,
-          fields: {
-            'user_id': userId.toString(),
-            'name': name,
-            'bio': bio,
-          },
+          fields: fields,
         );
       } else {
+        final body = <String, dynamic>{
+          'user_id': userId,
+          'name': name,
+          'bio': bio,
+        };
+        if (username != null && username.trim().isNotEmpty) {
+          body['username'] = username.trim();
+        }
         response = await _apiClient.post(
           ApiConstants.updateProfile,
-          body: {
-            'user_id': userId,
-            'name': name,
-            'bio': bio,
-          },
+          body: body,
         );
       }
 

@@ -72,7 +72,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final currentUser = context.read<LoginViewModel>().user;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Silakan login terlebih dahulu.')),
+        const SnackBar(content: Text('Silakan masuk terlebih dahulu.')),
       );
       return;
     }
@@ -88,7 +88,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
     if (newCount != null) {
       widget.onCommentCountChanged(newCount);
-      // Scroll to bottom
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -105,17 +104,29 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.background,
-        title: const Text('Hapus Komentar?'),
-        content: const Text('Apakah Anda yakin ingin menghapus komentar ini?'),
+        title: const Text(
+          'Hapus Komentar?',
+          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus komentar ini?',
+          style: TextStyle(fontSize: 13.5, color: AppColors.secondaryText),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.secondaryText),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.pureWhite,
+            ),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -154,18 +165,18 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+      height: MediaQuery.of(context).size.height * 0.76,
       decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        color: AppColors.pureWhite,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
       child: Column(
         children: [
           // Drag handle
           Container(
-            margin: const EdgeInsets.only(top: 10, bottom: 8),
-            width: 40,
-            height: 4,
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            width: 36,
+            height: 3.5,
             decoration: BoxDecoration(
               color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
@@ -174,22 +185,25 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const SizedBox(width: 24),
-                const Text(
-                  'Komentar',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                Text(
+                  'Diskusi & Komentar (${commentsVm.comments.length})',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 20,
+                    color: AppColors.secondaryText,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -201,39 +215,62 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           // Comments List
           Expanded(
             child: commentsVm.isLoading && commentsVm.comments.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.sageGreen,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : commentsVm.comments.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 48, color: AppColors.textSecondary),
-                            Gap(12),
-                            Text(
-                              'Belum ada komentar.',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.warmIvory,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 22,
+                                color: AppColors.secondaryText,
                               ),
                             ),
-                            Gap(4),
-                            Text(
-                              'Mulai percakapan.',
+                            const Gap(12),
+                            const Text(
+                              'Belum ada tanggapan',
                               style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryText,
+                              ),
+                            ),
+                            const Gap(4),
+                            const Text(
+                              'Jadilah yang pertama menulis komentar pada postingan ini.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.secondaryText,
                               ),
                             ),
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : ListView.separated(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 18,
+                          vertical: 14,
+                        ),
                         itemCount: commentsVm.comments.length,
+                        separatorBuilder: (_, _) => const Divider(
+                          height: 22,
+                          color: AppColors.border,
+                        ),
                         itemBuilder: (context, index) {
                           final comment = commentsVm.comments[index];
                           final isMyComment = comment.userId == currentUserId;
@@ -243,85 +280,80 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           final avatarUrl =
                               ApiConstants.getImageUrl(comment.avatar);
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: AppColors.surface,
-                                  backgroundImage: avatarUrl.isNotEmpty
-                                      ? NetworkImage(avatarUrl)
-                                      : null,
-                                  child: avatarUrl.isEmpty
-                                      ? Text(
-                                          comment.username.isNotEmpty
-                                              ? comment.username[0].toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                const Gap(12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      RichText(
-                                        text: TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: '${comment.username} ',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.textPrimary,
-                                                fontSize: 13.5,
-                                              ),
-                                            ),
-                                            TextSpan(
-                                              text: comment.text,
-                                              style: const TextStyle(
-                                                color: AppColors.textPrimary,
-                                                fontSize: 13.5,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const Gap(4),
-                                      Text(
-                                        comment.createDate.isNotEmpty
-                                            ? comment.createDate.split(' ')[0]
-                                            : '',
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 17,
+                                backgroundColor: AppColors.warmIvory,
+                                backgroundImage: avatarUrl.isNotEmpty
+                                    ? NetworkImage(avatarUrl)
+                                    : null,
+                                child: avatarUrl.isEmpty
+                                    ? Text(
+                                        comment.username.isNotEmpty
+                                            ? comment.username[0].toUpperCase()
+                                            : '?',
                                         style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: AppColors.deepForest,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (canDelete)
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: AppColors.textSecondary,
+                                      )
+                                    : null,
+                              ),
+                              const Gap(12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          comment.username,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primaryText,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const Gap(8),
+                                        if (comment.createDate.isNotEmpty)
+                                          Text(
+                                            comment.createDate.split(' ')[0],
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.secondaryText,
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                    onPressed: () =>
-                                        _confirmDeleteComment(comment),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    tooltip: 'Hapus Komentar',
+                                    const Gap(4),
+                                    Text(
+                                      comment.text,
+                                      style: const TextStyle(
+                                        color: AppColors.primaryText,
+                                        fontSize: 13.5,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (canDelete)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.secondaryText,
                                   ),
-                              ],
-                            ),
+                                  onPressed: () =>
+                                      _confirmDeleteComment(comment),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  tooltip: 'Hapus Komentar',
+                                ),
+                            ],
                           );
                         },
                       ),
@@ -331,80 +363,102 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
           // Bottom Input Field
           Container(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottomInset),
-            color: AppColors.background,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.surface,
-                  backgroundImage: currentUser?.avatar != null &&
-                          currentUser!.avatar.isNotEmpty
-                      ? NetworkImage(
-                          ApiConstants.getImageUrl(currentUser.avatar))
-                      : null,
-                  child: currentUser?.avatar == null ||
-                          currentUser!.avatar.isEmpty
-                      ? Text(
-                          currentUser?.username.isNotEmpty == true
-                              ? currentUser!.username[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        )
-                      : null,
-                ),
-                const Gap(12),
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: InputDecoration(
-                      hintText: 'Tambahkan komentar...',
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide:
-                            const BorderSide(color: AppColors.textSecondary),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomInset),
+            color: AppColors.pureWhite,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.warmIvory,
+                    backgroundImage: currentUser?.avatar != null &&
+                            currentUser!.avatar.isNotEmpty
+                        ? NetworkImage(
+                            ApiConstants.getImageUrl(currentUser.avatar),
+                          )
+                        : null,
+                    child: currentUser?.avatar == null ||
+                            currentUser!.avatar.isEmpty
+                        ? Text(
+                            currentUser?.username.isNotEmpty == true
+                                ? currentUser!.username[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.deepForest,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const Gap(10),
+                  Expanded(
+                    child: TextField(
+                      controller: _commentController,
+                      style: const TextStyle(fontSize: 13.5),
+                      decoration: InputDecoration(
+                        hintText: 'Tulis tanggapan Anda...',
+                        filled: true,
+                        fillColor: AppColors.warmIvory,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: AppColors.sageGreen),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const Gap(8),
-                TextButton(
-                  onPressed: _canSubmit && !commentsVm.isSubmitting
-                      ? _submitComment
-                      : null,
-                  child: commentsVm.isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Kirim',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: _canSubmit
-                                ? AppColors.primary
-                                : AppColors.buttonDisabled,
-                          ),
+                  const Gap(8),
+                  SizedBox(
+                    height: 38,
+                    child: ElevatedButton(
+                      onPressed: _canSubmit && !commentsVm.isSubmitting
+                          ? _submitComment
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.deepForest,
+                        foregroundColor: AppColors.pureWhite,
+                        disabledBackgroundColor: AppColors.mistGray,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                ),
-              ],
+                      ),
+                      child: commentsVm.isSubmitting
+                          ? const SizedBox(
+                              width: 15,
+                              height: 15,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.pureWhite,
+                              ),
+                            )
+                          : const Text(
+                              'Kirim',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

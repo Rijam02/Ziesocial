@@ -108,6 +108,27 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteStory({
+    required int storyId,
+    required int userId,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiConstants.deleteStory,
+        body: {
+          'story_id': storyId,
+          'user_id': userId,
+        },
+      );
+      await fetchStories(viewerId: userId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> markStoryViewed({
     required int viewerId,
     int? storyId,

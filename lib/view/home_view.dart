@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
@@ -86,58 +85,103 @@ class _HomeViewState extends State<HomeView> {
         context.watch<ProfileViewModel>().notifications.length;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'ZieSocial',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -1,
-            color: AppColors.textPrimary,
+      backgroundColor: AppColors.pureWhite,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.pureWhite,
+            border: Border(
+              bottom: BorderSide(color: AppColors.border, width: 1),
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _openActivityView,
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.favorite_border, size: 26),
-                if (notificationsCount > 0)
-                  Positioned(
-                    right: -1,
-                    top: -1,
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: AppColors.likeRed,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Row(
+                children: [
+                  const Text(
+                    'ZieSocial',
+                    style: TextStyle(
+                      fontFamily: 'Georgia',
+                      fontSize: 25,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.7,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  const Gap(10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warmIvory,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.border, width: 1),
+                    ),
+                    child: const Text(
+                      'EDITORIAL',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: AppColors.sageGreen,
                       ),
                     ),
                   ),
-              ],
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _navigateToCreatePost,
+                    icon: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 22,
+                      color: AppColors.primaryText,
+                    ),
+                    tooltip: 'Unggah Postingan',
+                  ),
+                  IconButton(
+                    onPressed: _openActivityView,
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.notifications_none_rounded,
+                          size: 23,
+                          color: AppColors.primaryText,
+                        ),
+                        if (notificationsCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.sageGreen,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.pureWhite,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    tooltip: 'Aktivitas',
+                  ),
+                ],
+              ),
             ),
-            tooltip: 'Aktivitas',
           ),
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Pesan Langsung (Direct Message)'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            icon: const Icon(CupertinoIcons.paperplane, size: 24),
-            tooltip: 'Pesan',
-          ),
-        ],
+        ),
       ),
       body: RefreshIndicator(
+        color: AppColors.deepForest,
+        backgroundColor: AppColors.pureWhite,
         onRefresh: () async {
           _loadFeed();
           _loadNotifications(silent: true);
@@ -154,7 +198,10 @@ class _HomeViewState extends State<HomeView> {
             if (homeVm.isLoading && homeVm.posts.isEmpty)
               const SliverFillRemaining(
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    color: AppColors.sageGreen,
+                    strokeWidth: 2,
+                  ),
                 ),
               )
             // 3. Error State
@@ -162,44 +209,53 @@ class _HomeViewState extends State<HomeView> {
               SliverFillRemaining(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.wifi_off_outlined,
-                          size: 56,
-                          color: AppColors.textSecondary,
-                        ),
-                        const Gap(12),
-                        const Text(
-                          'Gagal Memuat Beranda',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                    padding: const EdgeInsets.all(28),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AppColors.warmIvory,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: const Icon(
+                              Icons.cloud_off_outlined,
+                              size: 24,
+                              color: AppColors.secondaryText,
+                            ),
                           ),
-                        ),
-                        const Gap(6),
-                        Text(
-                          homeVm.errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                          const Gap(16),
+                          const Text(
+                            'Tidak dapat memuat beranda',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryText,
+                            ),
                           ),
-                        ),
-                        const Gap(16),
-                        ElevatedButton.icon(
-                          onPressed: _loadFeed,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Coba Lagi'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                          const Gap(6),
+                          Text(
+                            homeVm.errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.secondaryText,
+                              height: 1.4,
+                            ),
                           ),
-                        ),
-                      ],
+                          const Gap(18),
+                          OutlinedButton.icon(
+                            onPressed: _loadFeed,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Muat Ulang'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -208,58 +264,77 @@ class _HomeViewState extends State<HomeView> {
             else if (homeVm.posts.isEmpty)
               SliverFillRemaining(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.camera_alt_outlined,
-                        size: 64,
-                        color: AppColors.textSecondary,
-                      ),
-                      const Gap(12),
-                      const Text(
-                        'Selamat Datang di ZieSocial!',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: AppColors.warmIvory,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Icon(
+                            Icons.photo_camera_back_outlined,
+                            size: 26,
+                            color: AppColors.deepForest,
+                          ),
                         ),
-                      ),
-                      const Gap(6),
-                      const Text(
-                        'Mulai ikuti teman atau bagikan foto pertama Anda.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                        const Gap(16),
+                        const Text(
+                          'Jurnal Beranda Masih Kosong',
+                          style: TextStyle(
+                            fontFamily: 'Georgia',
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryText,
+                          ),
                         ),
-                      ),
-                      const Gap(20),
-                      ElevatedButton.icon(
-                        onPressed: _navigateToCreatePost,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Buat Postingan Baru'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                        const Gap(6),
+                        const Text(
+                          'Bagikan karya visual pertama Anda atau jelajahi kreator lain di ZieSocial.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: AppColors.secondaryText,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
-                    ],
+                        const Gap(20),
+                        ElevatedButton.icon(
+                          onPressed: _navigateToCreatePost,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Unggah Postingan Pertama'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )
-            // 5. Posts Feed List
+            // 5. Editorial Posts Feed List
             else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final post = homeVm.posts[index];
-                    return PostCard(
-                      post: post,
-                      onPostDeleted: () => _loadFeed(),
-                      onPostUpdated: () => _loadFeed(),
-                    );
-                  },
-                  childCount: homeVm.posts.length,
+              SliverPadding(
+                padding: const EdgeInsets.only(top: 4, bottom: 28),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final post = homeVm.posts[index];
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 620),
+                          child: PostCard(
+                            post: post,
+                            onPostDeleted: () => _loadFeed(),
+                            onPostUpdated: () => _loadFeed(),
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: homeVm.posts.length,
+                  ),
                 ),
               ),
           ],

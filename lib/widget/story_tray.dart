@@ -22,9 +22,9 @@ class StoryTray extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pureWhite,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
       builder: (ctx) => _CreateStorySheet(userId: currentUserId),
     );
@@ -73,199 +73,250 @@ class StoryTray extends StatelessWidget {
     final otherGroups = homeVm.storyGroups;
 
     return Container(
-      height: 108,
       decoration: const BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.warmIvory,
         border: Border(
-          bottom: BorderSide(color: AppColors.borderLight, width: 0.8),
+          bottom: BorderSide(color: AppColors.border, width: 1),
         ),
       ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        itemCount: otherGroups.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            // Item 0: Cerita Anda (foto profil + tombol +)
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: GestureDetector(
-                onTap: () {
-                  if (myHasStory && myStory != null) {
-                    _openStoryViewer(
-                      context,
-                      group: myStory,
-                      viewerId: currentUserId,
-                    );
-                  } else {
-                    _openUploadStorySheet(context, currentUserId);
-                  }
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
+      padding: const EdgeInsets.only(top: 10, bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'CERITA HARIAN',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _openUploadStorySheet(context, currentUserId),
+                  child: const Text(
+                    '+ Cerita Baru',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.deepForest,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(10),
+          SizedBox(
+            height: 90,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: otherGroups.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  // Item 0: Cerita Anda (foto profil + tombol +)
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (myHasStory && myStory != null) {
+                          _openStoryViewer(
+                            context,
+                            group: myStory,
+                            viewerId: currentUserId,
+                          );
+                        } else {
+                          _openUploadStorySheet(context, currentUserId);
+                        }
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(
+                                  (myHasStory && myHasUnseen) ? 2.5 : 0,
+                                ),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: (myHasStory && myHasUnseen)
+                                      ? AppColors.storyGradient
+                                      : null,
+                                ),
+                                child: Container(
+                                  padding: EdgeInsets.all(
+                                    (myHasStory && myHasUnseen) ? 2 : 0,
+                                  ),
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.warmIvory,
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 27,
+                                    backgroundColor: AppColors.pureWhite,
+                                    backgroundImage: avatarUrl.isNotEmpty
+                                        ? NetworkImage(avatarUrl)
+                                        : null,
+                                    child: avatarUrl.isEmpty
+                                        ? Text(
+                                            currentUser?.username.isNotEmpty ==
+                                                    true
+                                                ? currentUser!.username[0]
+                                                    .toUpperCase()
+                                                : 'U',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 17,
+                                              color: AppColors.deepForest,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () => _openUploadStorySheet(
+                                    context,
+                                    currentUserId,
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.deepForest,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.warmIvory,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.all(3),
+                                    child: const Icon(
+                                      Icons.add_rounded,
+                                      size: 13,
+                                      color: AppColors.pureWhite,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Gap(6),
+                          const Text(
+                            'Cerita Anda',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primaryText,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final group = otherGroups[index - 1];
+                final groupAvatarUrl = ApiConstants.getImageUrl(group.avatar);
+                final bool showBorder = group.hasStory && group.hasUnseenStory;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      if (group.hasStory) {
+                        _openStoryViewer(
+                          context,
+                          group: group,
+                          viewerId: currentUserId,
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileView(
+                              userId: group.userId,
+                              username: group.username,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(2.5),
+                          padding: EdgeInsets.all(showBorder ? 2.5 : 0),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            // Hanya tampilkan border gradient jika user mengupload story dan belum dilihat
-                            gradient: (myHasStory && myHasUnseen)
-                                ? AppColors.storyGradient
-                                : null,
+                            gradient:
+                                showBorder ? AppColors.storyGradient : null,
                           ),
                           child: Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: EdgeInsets.all(showBorder ? 2 : 0),
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
+                              color: AppColors.warmIvory,
                             ),
                             child: CircleAvatar(
-                              radius: 28,
-                              backgroundColor: AppColors.surface,
-                              backgroundImage: avatarUrl.isNotEmpty
-                                  ? NetworkImage(avatarUrl)
+                              radius: 27,
+                              backgroundColor: AppColors.pureWhite,
+                              backgroundImage: groupAvatarUrl.isNotEmpty
+                                  ? NetworkImage(groupAvatarUrl)
                                   : null,
-                              child: avatarUrl.isEmpty
+                              child: groupAvatarUrl.isEmpty
                                   ? Text(
-                                      currentUser?.username.isNotEmpty == true
-                                          ? currentUser!.username[0]
-                                              .toUpperCase()
+                                      group.username.isNotEmpty
+                                          ? group.username[0].toUpperCase()
                                           : 'U',
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 17,
+                                        color: AppColors.deepForest,
                                       ),
                                     )
                                   : null,
                             ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: GestureDetector(
-                            onTap: () =>
-                                _openUploadStorySheet(context, currentUserId),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                border:
-                                    Border.all(color: Colors.white, width: 2),
-                              ),
-                              padding: const EdgeInsets.all(2),
-                              child: const Icon(
-                                Icons.add,
-                                size: 14,
-                                color: Colors.white,
-                              ),
+                        const Gap(6),
+                        SizedBox(
+                          width: 68,
+                          child: Text(
+                            group.username,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: showBorder
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: showBorder
+                                  ? AppColors.primaryText
+                                  : AppColors.secondaryText,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const Gap(4),
-                    const Text(
-                      'Cerita Anda',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final group = otherGroups[index - 1];
-          final groupAvatarUrl = ApiConstants.getImageUrl(group.avatar);
-          final bool showBorder = group.hasStory && group.hasUnseenStory;
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () {
-                if (group.hasStory) {
-                  _openStoryViewer(
-                    context,
-                    group: group,
-                    viewerId: currentUserId,
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProfileView(
-                        userId: group.userId,
-                        username: group.username,
-                      ),
-                    ),
-                  );
-                }
+                  ),
+                );
               },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      // Border hanya muncul jika user mengupload story dan belum dilihat oleh kita
-                      gradient: showBorder ? AppColors.storyGradient : null,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: AppColors.surface,
-                        backgroundImage: groupAvatarUrl.isNotEmpty
-                            ? NetworkImage(groupAvatarUrl)
-                            : null,
-                        child: groupAvatarUrl.isEmpty
-                            ? Text(
-                                group.username.isNotEmpty
-                                    ? group.username[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: AppColors.textPrimary,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                  const Gap(4),
-                  SizedBox(
-                    width: 68,
-                    child: Text(
-                      group.username,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -286,6 +337,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
   XFile? _selectedFile;
   Uint8List? _imageBytes;
   bool _isUploading = false;
+  String? _errorText;
 
   @override
   void dispose() {
@@ -300,27 +352,31 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
     final bytes = await picked.readAsBytes();
     if (bytes.lengthInBytes > 5 * 1024 * 1024) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ukuran gambar maksimal 5MB.')),
-      );
+      setState(() {
+        _errorText = 'Ukuran foto maksimal 5MB.';
+      });
       return;
     }
 
     setState(() {
       _selectedFile = picked;
       _imageBytes = bytes;
+      _errorText = null;
     });
   }
 
   Future<void> _uploadStory() async {
     if (_selectedFile == null || _imageBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih foto untuk story terlebih dahulu.')),
-      );
+      setState(() {
+        _errorText = 'Pilih foto terlebih dahulu untuk dibagikan ke cerita.';
+      });
       return;
     }
 
-    setState(() => _isUploading = true);
+    setState(() {
+      _isUploading = true;
+      _errorText = null;
+    });
 
     final homeVm = context.read<HomeViewModel>();
     final messenger = ScaffoldMessenger.of(context);
@@ -341,17 +397,13 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
       navigator.pop();
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Cerita berhasil diunggah (berlaku 24 jam)!'),
-          backgroundColor: Colors.green,
+          content: Text('Cerita berhasil diterbitkan (berlaku 24 jam).'),
         ),
       );
     } else {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(homeVm.errorMessage ?? 'Gagal mengunggah cerita.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() {
+        _errorText = homeVm.errorMessage ?? 'Gagal mengunggah cerita.';
+      });
     }
   }
 
@@ -360,94 +412,173 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 16,
-        right: 16,
+        left: 20,
+        right: 20,
         top: 12,
       ),
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 3.5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const Gap(12),
+              const Gap(14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Tambah ke Cerita (24 Jam)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cerita Baru',
+                        style: TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      Gap(2),
+                      Text(
+                        'Tayang selama 24 jam di beranda pengikut Anda',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                    ],
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, size: 20),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                 ],
               ),
-              const Divider(height: 1),
-              const Gap(14),
-              if (_imageBytes != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 280),
-                    width: double.infinity,
-                    color: Colors.black,
-                    child: Image.memory(
-                      _imageBytes!,
-                      fit: BoxFit.contain,
+              const Divider(height: 20),
+              if (_errorText != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
                     ),
                   ),
+                  child: Text(
+                    _errorText!,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ),
+                const Gap(12),
+              ],
+              if (_imageBytes != null)
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 280),
+                        width: double.infinity,
+                        color: const Color(0xFF181B18),
+                        child: Image.memory(
+                          _imageBytes!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Material(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(6),
+                        child: InkWell(
+                          onTap: () => _pickImage(ImageSource.gallery),
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            child: Text(
+                              'Ganti Foto',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 )
               else
                 Container(
                   height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.warmIvory,
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
-                        Icons.amp_stories_outlined,
-                        size: 48,
-                        color: AppColors.textSecondary,
+                        Icons.add_photo_alternate_outlined,
+                        size: 38,
+                        color: AppColors.sageGreen,
                       ),
-                      const Gap(8),
+                      const Gap(10),
                       const Text(
-                        'Pilih foto untuk dibagikan ke Cerita Anda',
+                        'Pilih foto untuk dibagikan ke Cerita',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.secondaryText,
                         ),
                       ),
-                      const Gap(12),
+                      const Gap(14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           ElevatedButton.icon(
                             onPressed: () => _pickImage(ImageSource.gallery),
-                            icon: const Icon(Icons.photo_library, size: 18),
-                            label: const Text('Galeri'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
+                            icon: const Icon(
+                              Icons.photo_library_outlined,
+                              size: 17,
                             ),
+                            label: const Text('Galeri'),
                           ),
                           const Gap(10),
                           OutlinedButton.icon(
                             onPressed: () => _pickImage(ImageSource.camera),
-                            icon: const Icon(Icons.camera_alt, size: 18),
+                            icon: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 17,
+                            ),
                             label: const Text('Kamera'),
                           ),
                         ],
@@ -455,50 +586,39 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                     ],
                   ),
                 ),
-              const Gap(12),
+              const Gap(14),
               TextField(
                 controller: _captionController,
-                decoration: InputDecoration(
-                  hintText: 'Tulis keterangan cerita (opsional)...',
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const Gap(14),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: ElevatedButton(
-                  onPressed: _isUploading ? null : _uploadStory,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: _isUploading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Bagikan Cerita',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
+                style: const TextStyle(fontSize: 13.5),
+                decoration: const InputDecoration(
+                  hintText: 'Tambahkan keterangan singkat (opsional)...',
                 ),
               ),
               const Gap(16),
+              SizedBox(
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: _isUploading ? null : _uploadStory,
+                  child: _isUploading
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 17,
+                              height: 17,
+                              child: CircularProgressIndicator(
+                                color: AppColors.pureWhite,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            Gap(10),
+                            Text('Mengunggah cerita...'),
+                          ],
+                        )
+                      : const Text('Terbitkan Cerita'),
+                ),
+              ),
+              const Gap(18),
             ],
           ),
         ),
@@ -535,7 +655,10 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
 
   void _markCurrentAsViewed() {
     if (widget.group.stories.isEmpty) return;
-    final currentStory = widget.group.stories[_currentIndex];
+    final safeIdx = _currentIndex < widget.group.stories.length
+        ? _currentIndex
+        : widget.group.stories.length - 1;
+    final currentStory = widget.group.stories[safeIdx];
     context.read<HomeViewModel>().markStoryViewed(
           viewerId: widget.viewerId,
           storyId: currentStory.id,
@@ -543,8 +666,8 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
         );
   }
 
-  void _nextStory() {
-    if (_currentIndex < widget.group.stories.length - 1) {
+  void _nextStory(int totalCount) {
+    if (_currentIndex < totalCount - 1) {
       setState(() {
         _currentIndex++;
       });
@@ -563,12 +686,71 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
     }
   }
 
+  Future<void> _confirmDeleteStory(StoryItemModel story) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Hapus Cerita Ini?',
+          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Cerita ini akan dihapus secara permanen sebelum masa tayang 24 jam berakhir.',
+          style: TextStyle(fontSize: 13.5, color: AppColors.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.secondaryText),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.pureWhite,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final homeVm = context.read<HomeViewModel>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    final deleted = await homeVm.deleteStory(
+      storyId: story.id,
+      userId: widget.viewerId,
+    );
+
+    if (!mounted) return;
+    if (deleted) {
+      final updatedGroup = homeVm.getStoryGroupForUser(widget.group.userId);
+      if (updatedGroup == null || updatedGroup.stories.isEmpty) {
+        navigator.pop();
+      } else if (_currentIndex >= updatedGroup.stories.length) {
+        setState(() {
+          _currentIndex = updatedGroup.stories.length - 1;
+        });
+      }
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Cerita berhasil dihapus.')),
+      );
+    }
+  }
+
   void _showViewersSheet(StoryItemModel story) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pureWhite,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
       builder: (ctx) {
         final viewers = story.viewers;
@@ -578,8 +760,8 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
             children: [
               Container(
                 margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 40,
-                height: 4,
+                width: 36,
+                height: 3.5,
                 decoration: BoxDecoration(
                   color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
@@ -587,16 +769,21 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
               ),
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.visibility_outlined, size: 20),
+                    const Icon(
+                      Icons.visibility_outlined,
+                      size: 19,
+                      color: AppColors.deepForest,
+                    ),
                     const Gap(8),
                     Text(
                       'Riwayat Penonton (${viewers.length})',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryText,
                       ),
                     ),
                   ],
@@ -607,15 +794,22 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 36),
                   child: Text(
-                    'Belum ada pengguna lain yang menonton cerita ini.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    'Belum ada pengguna lain yang melihat cerita ini.',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: AppColors.secondaryText,
+                    ),
                   ),
                 )
               else
                 Flexible(
-                  child: ListView.builder(
+                  child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: viewers.length,
+                    separatorBuilder: (_, _) => const Divider(
+                      height: 1,
+                      indent: 68,
+                    ),
                     itemBuilder: (context, i) {
                       final v = viewers[i];
                       final vAvatar = ApiConstants.getImageUrl(v.avatar);
@@ -634,7 +828,7 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                           );
                         },
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.surface,
+                          backgroundColor: AppColors.warmIvory,
                           backgroundImage: vAvatar.isNotEmpty
                               ? NetworkImage(vAvatar)
                               : null,
@@ -644,8 +838,8 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                                       ? v.username[0].toUpperCase()
                                       : 'U',
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.deepForest,
                                   ),
                                 )
                               : null,
@@ -653,11 +847,20 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                         title: Text(
                           v.username,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                            color: AppColors.primaryText,
                           ),
                         ),
-                        subtitle: v.name.isNotEmpty ? Text(v.name) : null,
+                        subtitle: v.name.isNotEmpty
+                            ? Text(
+                                v.name,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.secondaryText,
+                                ),
+                              )
+                            : null,
                       );
                     },
                   ),
@@ -670,9 +873,22 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
     );
   }
 
+  String _formatStoryTimestamp(String dateStr) {
+    try {
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) return '';
+      final diff = DateTime.now().difference(parsed);
+      if (diff.inMinutes < 1) return 'Baru saja';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m lalu';
+      if (diff.inHours < 24) return '${diff.inHours}j lalu';
+      return '${parsed.day}/${parsed.month}';
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Gunakan data terbaru dari HomeViewModel agar daftar penonton selalu ter-update
     final latestGroup = context
             .watch<HomeViewModel>()
             .getStoryGroupForUser(widget.group.userId) ??
@@ -680,19 +896,25 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
     final stories = latestGroup.stories.isNotEmpty
         ? latestGroup.stories
         : widget.group.stories;
+
+    if (stories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final safeIndex =
         _currentIndex < stories.length ? _currentIndex : stories.length - 1;
     final story = stories[safeIndex];
 
     final storyImageUrl = ApiConstants.getImageUrl(story.image);
     final authorAvatarUrl = ApiConstants.getImageUrl(latestGroup.avatar);
+    final timestampText = _formatStoryTimestamp(story.createDate);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF161916),
       body: SafeArea(
         child: Stack(
           children: [
-            // Gambar Story
+            // Fullscreen Story Image with Tap Left/Right Navigation
             Positioned.fill(
               child: GestureDetector(
                 onTapUp: (details) {
@@ -700,7 +922,7 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                   if (details.globalPosition.dx < screenWidth * 0.35) {
                     _prevStory();
                   } else {
-                    _nextStory();
+                    _nextStory(stories.length);
                   }
                 },
                 child: Center(
@@ -711,42 +933,42 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                           errorBuilder: (ctx, err, stack) => const Icon(
                             Icons.broken_image_outlined,
                             color: Colors.white54,
-                            size: 64,
+                            size: 56,
                           ),
                         )
                       : const Icon(
                           Icons.image_outlined,
                           color: Colors.white54,
-                          size: 64,
+                          size: 56,
                         ),
                 ),
               ),
             ),
 
-            // Progress Bar Indikator di Atas + Header Profil
+            // Top Progress Indicator + Author Header + Actions
             Positioned(
               top: 12,
-              left: 12,
-              right: 12,
+              left: 16,
+              right: 16,
               child: Column(
                 children: [
                   Row(
                     children: List.generate(stories.length, (i) {
                       return Expanded(
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          height: 3,
+                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                          height: 2.5,
                           decoration: BoxDecoration(
                             color: i <= safeIndex
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.35),
+                                ? AppColors.softBeige
+                                : Colors.white.withValues(alpha: 0.28),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       );
                     }),
                   ),
-                  const Gap(12),
+                  const Gap(14),
                   Row(
                     children: [
                       GestureDetector(
@@ -765,8 +987,8 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                         child: Row(
                           children: [
                             CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.surface,
+                              radius: 17,
+                              backgroundColor: AppColors.warmIvory,
                               backgroundImage: authorAvatarUrl.isNotEmpty
                                   ? NetworkImage(authorAvatarUrl)
                                   : null,
@@ -777,20 +999,33 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                                               .toUpperCase()
                                           : 'U',
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.deepForest,
                                       ),
                                     )
                                   : null,
                             ),
                             const Gap(10),
-                            Text(
-                              latestGroup.username,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  latestGroup.username,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                if (timestampText.isNotEmpty)
+                                  Text(
+                                    timestampText,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
                         ),
@@ -800,14 +1035,29 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                         IconButton(
                           onPressed: widget.onAddNewStory,
                           icon: const Icon(
-                            Icons.add_circle_outline,
+                            Icons.add_circle_outline_rounded,
                             color: Colors.white,
+                            size: 22,
                           ),
-                          tooltip: 'Tambah Story Baru',
+                          tooltip: 'Tambah Cerita',
+                        ),
+                      if (latestGroup.isOwn)
+                        IconButton(
+                          onPressed: () => _confirmDeleteStory(story),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFF29B9B),
+                            size: 22,
+                          ),
+                          tooltip: 'Hapus Cerita Ini',
                         ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
@@ -815,48 +1065,55 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
               ),
             ),
 
-            // Caption & Riwayat Penonton di Bagian Bawah
+            // Bottom Caption & Viewers History
             Positioned(
-              bottom: 20,
-              left: 16,
-              right: 16,
+              bottom: 22,
+              left: 18,
+              right: 18,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (story.caption.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black54,
+                        color: Colors.black.withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: Text(
                         story.caption,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14.5,
+                          fontSize: 14,
+                          height: 1.4,
                         ),
                       ),
                     ),
                   if (latestGroup.isOwn) ...[
-                    const Gap(12),
+                    const Gap(14),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: InkWell(
                         onTap: () => _showViewersSheet(story),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -864,15 +1121,15 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                               const Icon(
                                 Icons.visibility_outlined,
                                 color: Colors.white,
-                                size: 18,
+                                size: 17,
                               ),
                               const Gap(6),
                               Text(
-                                '${story.viewers.length} penonton',
+                                '${story.viewers.length} Penonton',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontSize: 12.5,
                                 ),
                               ),
                             ],

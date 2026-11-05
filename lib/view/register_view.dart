@@ -18,6 +18,7 @@ class _RegisterViewState extends State<RegisterView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _localValidationError;
 
   @override
   void dispose() {
@@ -35,18 +36,27 @@ class _RegisterViewState extends State<RegisterView> {
     final password = _passwordController.text;
 
     if (username.isEmpty || name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua kolom wajib diisi.')),
-      );
+      setState(() {
+        _localValidationError = 'Semua kolom pendaftaran wajib diisi.';
+      });
+      return;
+    }
+
+    if (!email.contains('@')) {
+      setState(() {
+        _localValidationError = 'Masukkan format alamat email yang valid.';
+      });
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kata sandi minimal 6 karakter.')),
-      );
+      setState(() {
+        _localValidationError = 'Kata sandi harus terdiri dari minimal 6 karakter.';
+      });
       return;
     }
+
+    setState(() => _localValidationError = null);
 
     final success = await context.read<RegisterViewModel>().register(
           username: username,
@@ -62,25 +72,21 @@ class _RegisterViewState extends State<RegisterView> {
         SnackBar(
           content: Text(
             context.read<RegisterViewModel>().successMessage ??
-                'Registrasi berhasil. Silakan login.',
+                'Akun berhasil dibuat. Silakan masuk.',
           ),
-          backgroundColor: Colors.green[700],
+          backgroundColor: AppColors.deepForest,
         ),
       );
 
-      // Sesuai alur Instagram: setelah register, arahkan ke menu login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginView()),
       );
     } else {
       final error = context.read<RegisterViewModel>().errorMessage;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Registrasi gagal.'),
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      setState(() {
+        _localValidationError = error ?? 'Registrasi gagal. Silakan coba lagi.';
+      });
     }
   }
 
@@ -89,169 +95,300 @@ class _RegisterViewState extends State<RegisterView> {
     final isLoading = context.watch<RegisterViewModel>().isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.warmIvory,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Instagram Style Brand Logo
-                      const Text(
-                        'ZieSocial',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'serif',
-                          fontSize: 44,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -1.5,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const Gap(12),
-                      const Text(
-                        'Daftar untuk melihat foto dan video dari teman Anda.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          height: 1.3,
-                        ),
-                      ),
-                      const Gap(32),
-
-                      // Username Input
-                      TextField(
-                        controller: _usernameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Nama Pengguna',
-                          prefixIcon: Icon(Icons.person_outline, size: 20),
-                        ),
-                      ),
-                      const Gap(10),
-
-                      // Full Name Input
-                      TextField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Nama Lengkap',
-                          prefixIcon: Icon(Icons.badge_outlined, size: 20),
-                        ),
-                      ),
-                      const Gap(10),
-
-                      // Email Input
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          hintText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined, size: 20),
-                        ),
-                      ),
-                      const Gap(10),
-
-                      // Password Input
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          hintText: 'Kata Sandi',
-                          prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const Gap(18),
-
-                      // Register Button
-                      SizedBox(
-                        height: 44,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleRegister,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            disabledBackgroundColor: AppColors.buttonDisabled,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Daftar',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 28,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Brand Header
+                        Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppColors.deepForest,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Z.',
+                                style: TextStyle(
+                                  fontFamily: 'Georgia',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.pureWhite,
                                 ),
-                        ),
-                      ),
-                      const Gap(24),
-
-                      // OR Separator
-                      Row(
-                        children: const [
-                          Expanded(child: Divider(color: AppColors.border)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'ATAU',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textSecondary,
                               ),
                             ),
+                            const Gap(10),
+                            const Text(
+                              'ZIESOCIAL',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.8,
+                                color: AppColors.deepForest,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Gap(20),
+                        const Text(
+                          'Mulai jurnal visual Anda.',
+                          style: TextStyle(
+                            fontFamily: 'Georgia',
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.6,
+                            color: AppColors.primaryText,
+                            height: 1.2,
                           ),
-                          Expanded(child: Divider(color: AppColors.border)),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const Gap(8),
+                        const Text(
+                          'Daftar untuk berbagi karya fotografi, cerita harian, dan terhubung dengan komunitas.',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: AppColors.secondaryText,
+                            height: 1.45,
+                          ),
+                        ),
+                        const Gap(24),
+
+                        // Form Container
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppColors.pureWhite,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.border,
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_localValidationError != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: AppColors.error.withValues(alpha: 0.35),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline,
+                                        size: 18,
+                                        color: AppColors.error,
+                                      ),
+                                      const Gap(8),
+                                      Expanded(
+                                        child: Text(
+                                          _localValidationError!,
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            color: AppColors.error,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Gap(16),
+                              ],
+
+                              // Full Name
+                              const Text(
+                                'Nama Lengkap',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                              const Gap(6),
+                              TextField(
+                                controller: _nameController,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  hintText: 'Contoh: Nadia Pramesti',
+                                  prefixIcon: Icon(
+                                    Icons.badge_outlined,
+                                    size: 18,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Username
+                              const Text(
+                                'Nama Pengguna (Username)',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                              const Gap(6),
+                              TextField(
+                                controller: _usernameController,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  hintText: 'Contoh: nadiapramesti',
+                                  prefixIcon: Icon(
+                                    Icons.person_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Email
+                              const Text(
+                                'Alamat Email',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                              const Gap(6),
+                              TextField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  hintText: 'nama@email.com',
+                                  prefixIcon: Icon(
+                                    Icons.mail_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ),
+                              const Gap(14),
+
+                              // Password
+                              const Text(
+                                'Kata Sandi',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                              const Gap(6),
+                              TextField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _handleRegister(),
+                                decoration: InputDecoration(
+                                  hintText: 'Minimal 6 karakter',
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 18,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      size: 18,
+                                      color: AppColors.secondaryText,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const Gap(22),
+
+                              // Register Button
+                              SizedBox(
+                                height: 46,
+                                child: ElevatedButton(
+                                  onPressed: isLoading ? null : _handleRegister,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.deepForest,
+                                    foregroundColor: AppColors.pureWhite,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: isLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            color: AppColors.pureWhite,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Daftar Sekarang',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Bottom Footer
-            const Divider(height: 1, color: AppColors.borderLight),
+            // Footer to Login
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              color: AppColors.background,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              decoration: const BoxDecoration(
+                color: AppColors.pureWhite,
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 1),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Sudah memiliki akun? ',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
+                      fontSize: 13.5,
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   GestureDetector(
@@ -264,11 +401,13 @@ class _RegisterViewState extends State<RegisterView> {
                       );
                     },
                     child: const Text(
-                      'Masuk.',
+                      'Masuk di sini',
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.deepForest,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.sageGreen,
                       ),
                     ),
                   ),

@@ -5,6 +5,9 @@ import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/model/post_model.dart';
 import 'package:ziesocial/model/profile_model.dart';
+import 'package:ziesocial/model/user_model.dart';
+import 'package:ziesocial/view/account_settings_view.dart';
+import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/view/edit_profile_view.dart';
 import 'package:ziesocial/view/login_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
@@ -56,61 +59,104 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-  void _showOwnProfileMenu() {
+  void _openAccountSettings(UserModel user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AccountSettingsView(
+          user: user,
+          onProfileUpdated: _loadProfile,
+        ),
+      ),
+    );
+  }
+
+  void _showOwnProfileMenu(UserModel? user) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pureWhite,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
       builder: (sheetCtx) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: AppColors.textPrimary),
-                title: const Text(
-                  'Keluar',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 4, bottom: 10),
+                  width: 36,
+                  height: 3.5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                onTap: () {
-                  Navigator.pop(sheetCtx);
-                  _handleLogout();
-                },
-              ),
-              const Divider(height: 1, color: AppColors.borderLight),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_forever_outlined,
-                  color: Colors.red,
-                ),
-                title: const Text(
-                  'Hapus Akun',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: Colors.red,
+                if (user != null) ...[
+                  ListTile(
+                    leading: const Icon(
+                      Icons.settings_outlined,
+                      size: 20,
+                      color: AppColors.primaryText,
+                    ),
+                    title: const Text(
+                      'Pengaturan Akun',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetCtx);
+                      _openAccountSettings(user);
+                    },
                   ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                ],
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout_rounded,
+                    size: 20,
+                    color: AppColors.primaryText,
+                  ),
+                  title: const Text(
+                    'Keluar',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _handleLogout();
+                  },
                 ),
-                onTap: () {
-                  Navigator.pop(sheetCtx);
-                  _handleDeleteAccount();
-                },
-              ),
-              const Gap(8),
-            ],
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_forever_outlined,
+                    size: 20,
+                    color: AppColors.error,
+                  ),
+                  title: const Text(
+                    'Hapus Akun',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _handleDeleteAccount();
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -121,15 +167,23 @@ class _ProfileViewState extends State<ProfileView> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.background,
-        title: const Text('Keluar dari Akun?'),
-        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi ZieSocial?'),
+        title: const Text(
+          'Keluar dari Akun?',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari aplikasi ZieSocial?',
+          style: TextStyle(fontSize: 13.5, color: AppColors.secondaryText),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.secondaryText),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               context.read<LoginViewModel>().logout();
@@ -140,7 +194,11 @@ class _ProfileViewState extends State<ProfileView> {
                 (route) => false,
               );
             },
-            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.deepForest,
+              foregroundColor: AppColors.pureWhite,
+            ),
+            child: const Text('Keluar'),
           ),
         ],
       ),
@@ -148,66 +206,130 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   void _handleDeleteAccount() {
+    bool isConfirmed = false;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.background,
-        title: const Text('Hapus Akun Permanen?'),
-        content: const Text(
-          'Semua data dari akun ini akan dihapus secara permanen dari aplikasi ZieSocial.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final currentUser = context.read<LoginViewModel>().user;
-              final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-              if (currentUserId <= 0) return;
-
-              final profileVm = context.read<ProfileViewModel>();
-              final loginVm = context.read<LoginViewModel>();
-              final homeVm = context.read<HomeViewModel>();
-              final messenger = ScaffoldMessenger.of(context);
-              final navigator = Navigator.of(context);
-
-              final deleted = await profileVm.deleteAccount(currentUserId);
-              if (!mounted) return;
-
-              if (deleted) {
-                loginVm.logout();
-                homeVm.fetchPosts();
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Akun berhasil dihapus.'),
-                  ),
-                );
-                navigator.pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginView()),
-                  (route) => false,
-                );
-              } else {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      profileVm.getErrorMessage(currentUserId) ??
-                          'Gagal menghapus akun.',
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text(
+                'Hapus Akun Permanen?',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Semua data dari akun ini (postingan, cerita, sorotan, pengikut, mengikuti, suka, dan komentar) akan dihapus secara permanen dari aplikasi dan database ZieSocial.',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: AppColors.secondaryText,
+                      height: 1.45,
                     ),
-                    backgroundColor: Colors.red,
                   ),
-                );
-              }
-            },
-            child: const Text(
-              'Hapus Akun',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+                  const Gap(12),
+                  InkWell(
+                    onTap: () {
+                      setDialogState(() {
+                        isConfirmed = !isConfirmed;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: isConfirmed,
+                          activeColor: AppColors.error,
+                          onChanged: (val) {
+                            setDialogState(() {
+                              isConfirmed = val ?? false;
+                            });
+                          },
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Ya, saya yakin ingin menghapus akun secara permanen.',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Batal',
+                    style: TextStyle(color: AppColors.secondaryText),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: !isConfirmed
+                      ? null
+                      : () async {
+                          Navigator.pop(ctx);
+                          final currentUser =
+                              context.read<LoginViewModel>().user;
+                          final currentUserId =
+                              int.tryParse(currentUser?.id ?? '0') ?? 0;
+                          if (currentUserId <= 0) return;
+
+                          final profileVm = context.read<ProfileViewModel>();
+                          final loginVm = context.read<LoginViewModel>();
+                          final homeVm = context.read<HomeViewModel>();
+                          final messenger =
+                              ScaffoldMessenger.of(this.context);
+                          final navigator = Navigator.of(this.context);
+
+                          final deleted =
+                              await profileVm.deleteAccount(currentUserId);
+                          if (!mounted) return;
+
+                          if (deleted) {
+                            loginVm.logout();
+                            homeVm.fetchPosts();
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Akun berhasil dihapus.'),
+                              ),
+                            );
+                            navigator.pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const LoginView(),
+                              ),
+                              (route) => false,
+                            );
+                          } else {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  profileVm.getErrorMessage(currentUserId) ??
+                                      'Gagal menghapus akun.',
+                                ),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: AppColors.pureWhite,
+                  ),
+                  child: const Text('Hapus Akun'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -215,10 +337,13 @@ class _ProfileViewState extends State<ProfileView> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.pureWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+      ),
       builder: (context) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.85,
+          initialChildSize: 0.86,
           minChildSize: 0.5,
           maxChildSize: 0.95,
           expand: false,
@@ -227,25 +352,37 @@ class _ProfileViewState extends State<ProfileView> {
               children: [
                 Container(
                   margin: const EdgeInsets.only(top: 10, bottom: 8),
-                  width: 40,
-                  height: 4,
+                  width: 36,
+                  height: 3.5,
                   decoration: BoxDecoration(
                     color: AppColors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Postingan',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        'Detail Postingan',
+                        style: TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryText,
+                        ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, size: 20),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: AppColors.secondaryText,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -294,389 +431,642 @@ class _ProfileViewState extends State<ProfileView> {
         context.watch<HomeViewModel>().hasUnseenStoryForUser(targetUserId);
 
     final avatarUrl = ApiConstants.getImageUrl(profile?.user.avatar);
-    final displayedUsername = profile?.user.username ?? widget.username ?? 'Profil';
+    final displayedUsername =
+        profile?.user.username ?? widget.username ?? 'Profil';
+    final displayedName = (profile?.user.name.isNotEmpty ?? false)
+        ? profile!.user.name
+        : displayedUsername;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              displayedUsername,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+      backgroundColor: AppColors.pureWhite,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(58),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.pureWhite,
+            border: Border(
+              bottom: BorderSide(color: AppColors.border, width: 1),
+            ),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  if (Navigator.canPop(context)) ...[
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        size: 20,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                    const Gap(4),
+                  ],
+                  Expanded(
+                    child: Text(
+                      '@$displayedUsername',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16.5,
+                        color: AppColors.primaryText,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isOwnProfile)
+                    IconButton(
+                      onPressed: () =>
+                          _showOwnProfileMenu(profile?.user ?? currentUser),
+                      icon: const Icon(
+                        Icons.menu_rounded,
+                        color: AppColors.primaryText,
+                        size: 23,
+                      ),
+                      tooltip: 'Menu & Pengaturan Akun',
+                    ),
+                ],
               ),
             ),
-            if (isOwnProfile)
-              const Icon(Icons.keyboard_arrow_down, size: 18),
-          ],
+          ),
         ),
-        actions: [
-          if (isOwnProfile) ...[
-            IconButton(
-              onPressed: _showOwnProfileMenu,
-              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-              tooltip: 'Menu Profil',
-            ),
-          ] else ...[
-            IconButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Menu opsi profil')),
-                );
-              },
-              icon: const Icon(Icons.more_vert),
-            ),
-          ],
-        ],
       ),
       body: (isLoading && profile == null)
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.sageGreen,
+                strokeWidth: 2,
+              ),
+            )
           : (errorMessage != null && profile == null)
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const Gap(12),
-                      Text(errorMessage),
-                      const Gap(12),
-                      ElevatedButton(
-                        onPressed: _loadProfile,
-                        child: const Text('Coba Lagi'),
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 40,
+                          color: AppColors.error,
+                        ),
+                        const Gap(12),
+                        Text(
+                          errorMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        const Gap(14),
+                        OutlinedButton(
+                          onPressed: _loadProfile,
+                          child: const Text('Coba Lagi'),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : (profile == null)
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.sageGreen,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : RefreshIndicator(
-                  onRefresh: () async => _loadProfile(),
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      // 1. Profile Header Stats & Avatar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            // Avatar
-                            Container(
-                              padding: const EdgeInsets.all(2.5),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: hasUnseenStory
-                                    ? AppColors.storyGradient
-                                    : null,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
-                                child: CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: AppColors.surface,
-                                  backgroundImage: avatarUrl.isNotEmpty
-                                      ? NetworkImage(avatarUrl)
-                                      : null,
-                                  child: avatarUrl.isEmpty
-                                      ? Text(
-                                          (profile?.user.name.isNotEmpty == true)
-                                              ? profile!.user.name[0].toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textPrimary,
+                      color: AppColors.deepForest,
+                      backgroundColor: AppColors.pureWhite,
+                      onRefresh: () async => _loadProfile(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          // 1. Editorial Profile Identity Section
+                          Container(
+                            color: AppColors.warmIvory,
+                            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 640),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        // Avatar with conditional unseen story border
+                                        Container(
+                                          padding: EdgeInsets.all(
+                                            hasUnseenStory ? 2.5 : 0,
                                           ),
-                                        )
-                                      : null,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: hasUnseenStory
+                                                ? AppColors.storyGradient
+                                                : null,
+                                            border: hasUnseenStory
+                                                ? null
+                                                : Border.all(
+                                                    color: AppColors.border,
+                                                    width: 1.5,
+                                                  ),
+                                          ),
+                                          child: Container(
+                                            padding: EdgeInsets.all(
+                                              hasUnseenStory ? 2 : 0,
+                                            ),
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: AppColors.warmIvory,
+                                            ),
+                                            child: CircleAvatar(
+                                              radius: 38,
+                                              backgroundColor:
+                                                  AppColors.pureWhite,
+                                              backgroundImage:
+                                                  avatarUrl.isNotEmpty
+                                                      ? NetworkImage(avatarUrl)
+                                                      : null,
+                                              child: avatarUrl.isEmpty
+                                                  ? Text(
+                                                      displayedName.isNotEmpty
+                                                          ? displayedName[0]
+                                                              .toUpperCase()
+                                                          : 'U',
+                                                      style: const TextStyle(
+                                                        fontSize: 28,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: AppColors
+                                                            .deepForest,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                          ),
+                                        ),
+                                        const Gap(18),
+
+                                        // Full Name & Handle
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                displayedName,
+                                                style: const TextStyle(
+                                                  fontFamily: 'Georgia',
+                                                  fontSize: 21,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.primaryText,
+                                                  letterSpacing: -0.3,
+                                                ),
+                                              ),
+                                              const Gap(3),
+                                              Text(
+                                                '@$displayedUsername',
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color:
+                                                      AppColors.secondaryText,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              if (profile
+                                                  .user.bio.isNotEmpty) ...[
+                                                const Gap(8),
+                                                Text(
+                                                  profile.user.bio,
+                                                  style: const TextStyle(
+                                                    fontSize: 13.5,
+                                                    color:
+                                                        AppColors.primaryText,
+                                                    height: 1.4,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Gap(18),
+
+                                    // Editorial Stats Card
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.pureWhite,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.border,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildStatItem(
+                                              profile.postsCount.toString(),
+                                              'Postingan',
+                                            ),
+                                          ),
+                                          Container(
+                                            width: 1,
+                                            height: 28,
+                                            color: AppColors.border,
+                                          ),
+                                          Expanded(
+                                            child: _buildStatItem(
+                                              profile.followersCount.toString(),
+                                              'Pengikut',
+                                              onTap: () => _openFollowList(
+                                                targetUserId: targetUserId,
+                                                username: displayedUsername,
+                                                initialTabIndex: 0,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            width: 1,
+                                            height: 28,
+                                            color: AppColors.border,
+                                          ),
+                                          Expanded(
+                                            child: _buildStatItem(
+                                              profile.followingCount.toString(),
+                                              'Mengikuti',
+                                              onTap: () => _openFollowList(
+                                                targetUserId: targetUserId,
+                                                username: displayedUsername,
+                                                initialTabIndex: 1,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Gap(14),
+
+                                    // Profile Action Buttons
+                                    if (isOwnProfile)
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: 38,
+                                              child: ElevatedButton.icon(
+                                                onPressed: () async {
+                                                  final updated =
+                                                      await Navigator.push<
+                                                          bool>(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          EditProfileView(
+                                                        user: profile.user,
+                                                      ),
+                                                    ),
+                                                  );
+                                                  if (updated == true) {
+                                                    _loadProfile();
+                                                  }
+                                                },
+                                                icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 16,
+                                                ),
+                                                label:
+                                                    const Text('Edit Profil'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      AppColors.deepForest,
+                                                  foregroundColor:
+                                                      AppColors.pureWhite,
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const Gap(10),
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: 38,
+                                              child: OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _openAccountSettings(
+                                                  profile.user,
+                                                ),
+                                                icon: const Icon(
+                                                  Icons.tune_rounded,
+                                                  size: 16,
+                                                ),
+                                                label: const Text('Pengaturan'),
+                                                style: OutlinedButton.styleFrom(
+                                                  backgroundColor:
+                                                      AppColors.pureWhite,
+                                                  foregroundColor:
+                                                      AppColors.primaryText,
+                                                  padding: EdgeInsets.zero,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: 38,
+                                              child: profile.isFollowing
+                                                  ? OutlinedButton.icon(
+                                                      onPressed: () async {
+                                                        await context
+                                                            .read<
+                                                                ProfileViewModel>()
+                                                            .toggleFollow(
+                                                              targetUserId:
+                                                                  targetUserId,
+                                                              followerId:
+                                                                  currentUserId,
+                                                            );
+                                                      },
+                                                      icon: const Icon(
+                                                        Icons.check_rounded,
+                                                        size: 16,
+                                                      ),
+                                                      label: const Text(
+                                                        'Mengikuti',
+                                                      ),
+                                                      style: OutlinedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            AppColors.pureWhite,
+                                                        foregroundColor:
+                                                            AppColors
+                                                                .primaryText,
+                                                      ),
+                                                    )
+                                                  : ElevatedButton.icon(
+                                                      onPressed: () async {
+                                                        await context
+                                                            .read<
+                                                                ProfileViewModel>()
+                                                            .toggleFollow(
+                                                              targetUserId:
+                                                                  targetUserId,
+                                                              followerId:
+                                                                  currentUserId,
+                                                            );
+                                                      },
+                                                      icon: const Icon(
+                                                        Icons
+                                                            .person_add_alt_1_rounded,
+                                                        size: 16,
+                                                      ),
+                                                      label:
+                                                          const Text('Ikuti'),
+                                                      style: ElevatedButton
+                                                          .styleFrom(
+                                                        backgroundColor:
+                                                            AppColors
+                                                                .deepForest,
+                                                        foregroundColor:
+                                                            AppColors.pureWhite,
+                                                      ),
+                                                    ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
                                 ),
                               ),
                             ),
-                            const Gap(24),
+                          ),
+                          const Divider(height: 1),
 
-                            // Stats: Postingan, Pengikut, Mengikuti
-                            Expanded(
+                          // 2. Sorotan (Highlights) - Hanya muncul apabila user telah membuat sorotan
+                          if (profile.highlights.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildStatColumn(
-                                    profile?.postsCount.toString() ?? '0',
-                                    'Postingan',
-                                  ),
-                                  _buildStatColumn(
-                                    profile?.followersCount.toString() ?? '0',
-                                    'Pengikut',
-                                    onTap: () => _openFollowList(
-                                      targetUserId: targetUserId,
-                                      username: displayedUsername,
-                                      initialTabIndex: 0,
+                                  const Text(
+                                    'SOROTAN PILIHAN',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.4,
+                                      color: AppColors.secondaryText,
                                     ),
                                   ),
-                                  _buildStatColumn(
-                                    profile?.followingCount.toString() ?? '0',
-                                    'Mengikuti',
-                                    onTap: () => _openFollowList(
-                                      targetUserId: targetUserId,
-                                      username: displayedUsername,
-                                      initialTabIndex: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // 2. User Info: Name & Bio
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              profile?.user.name ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            if (profile?.user.bio.isNotEmpty == true) ...[
-                              const Gap(4),
-                              Text(
-                                profile!.user.bio,
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  color: AppColors.textPrimary,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const Gap(16),
-
-                      // 3. Action Buttons (Edit Profile / Follow)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: isOwnProfile
-                            ? Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildButton(
-                                      text: 'Edit Profil',
-                                      backgroundColor: const Color(0xFFEFEFEF),
-                                      textColor: AppColors.textPrimary,
-                                      onPressed: () async {
-                                        final updated = await Navigator.push(
+                                  if (isOwnProfile)
+                                    GestureDetector(
+                                      onTap: () async {
+                                        final created =
+                                            await Navigator.push<bool>(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => EditProfileView(
-                                              user: profile!.user,
+                                            builder: (_) =>
+                                                const CreatePostView(
+                                              initialHighlightMode: true,
                                             ),
                                           ),
                                         );
-                                        if (updated == true) {
+                                        if (created == true && mounted) {
                                           _loadProfile();
                                         }
                                       },
+                                      child: const Text(
+                                        '+ Tambah Sorotan',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.deepForest,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const Gap(8),
-                                  Expanded(
-                                    child: _buildButton(
-                                      text: 'Bagikan Profil',
-                                      backgroundColor: const Color(0xFFEFEFEF),
-                                      textColor: AppColors.textPrimary,
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Tautan profil disalin.'),
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildButton(
-                                      text: profile?.isFollowing == true
-                                          ? 'Mengikuti'
-                                          : 'Ikuti',
-                                      backgroundColor: profile?.isFollowing == true
-                                          ? const Color(0xFFEFEFEF)
-                                          : AppColors.primary,
-                                      textColor: profile?.isFollowing == true
-                                          ? AppColors.textPrimary
-                                          : Colors.white,
-                                      onPressed: () async {
-                                        await context
-                                            .read<ProfileViewModel>()
-                                            .toggleFollow(
-                                              targetUserId: targetUserId,
-                                              followerId: currentUserId,
-                                            );
-                                      },
-                                    ),
-                                  ),
-                                  const Gap(8),
-                                  Expanded(
-                                    child: _buildButton(
-                                      text: 'Pesan',
-                                      backgroundColor: const Color(0xFFEFEFEF),
-                                      textColor: AppColors.textPrimary,
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Membuka pesan langsung...'),
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
                                 ],
                               ),
-                      ),
-                      const Gap(16),
-
-                      // 4. Sorotan (Hanya muncul jika user telah membuat sorotan)
-                      if (profile.highlights.isNotEmpty) ...[
-                        SizedBox(
-                          height: 86,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: profile.highlights.length,
-                            itemBuilder: (context, index) {
-                              final hl = profile.highlights[index];
-                              return _buildHighlightItem(
-                                highlight: hl,
-                                isOwnProfile: isOwnProfile,
-                                currentUserId: currentUserId,
-                              );
-                            },
-                          ),
-                        ),
-                        const Gap(8),
-                      ],
-                      const Divider(height: 1),
-
-                      // 5. Tabs (Grid Posts, Tagged)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: AppColors.textPrimary,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.grid_on,
-                                size: 22,
-                                color: AppColors.textPrimary,
+                            ),
+                            SizedBox(
+                              height: 92,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: profile.highlights.length,
+                                itemBuilder: (context, index) {
+                                  final hl = profile.highlights[index];
+                                  return _buildHighlightItem(
+                                    highlight: hl,
+                                    isOwnProfile: isOwnProfile,
+                                    currentUserId: currentUserId,
+                                  );
+                                },
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: const Icon(
-                                Icons.person_pin_outlined,
-                                size: 22,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                            const Gap(8),
+                            const Divider(height: 1),
+                          ],
 
-                      // 6. 3x3 Photo Grid of Posts
-                      if (profile?.posts.isEmpty ?? true)
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 60),
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(
-                                  Icons.camera_alt_outlined,
-                                  size: 48,
-                                  color: AppColors.textSecondary,
+                          // 3. Editorial Posts Section Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.grid_view_rounded,
+                                      size: 16,
+                                      color: AppColors.deepForest,
+                                    ),
+                                    Gap(8),
+                                    Text(
+                                      'ARSIP PUBLIKASI',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.4,
+                                        color: AppColors.primaryText,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Gap(12),
                                 Text(
-                                  'Belum Ada Postingan',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
+                                  '${profile.posts.length} Foto',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryText,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        )
-                      else
-                        GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 1.5,
-                            mainAxisSpacing: 1.5,
-                          ),
-                          itemCount: profile!.posts.length,
-                          itemBuilder: (context, index) {
-                            final post = profile.posts[index];
-                            final imageUrl = ApiConstants.getImageUrl(post.image);
 
-                            return GestureDetector(
-                              onTap: () => _openPostDetail(post),
-                              child: Container(
-                                color: AppColors.surface,
-                                child: imageUrl.isNotEmpty
-                                    ? Image.network(
-                                        imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (ctx, err, stack) =>
-                                            const Center(
-                                          child: Icon(
-                                            Icons.broken_image_outlined,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      )
-                                    : const Center(
-                                        child: Icon(
-                                          Icons.image_outlined,
-                                          color: AppColors.textSecondary,
+                          // 4. Posts Grid
+                          if (profile.posts.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 56,
+                                horizontal: 24,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warmIvory,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.border,
                                         ),
                                       ),
+                                      child: const Icon(
+                                        Icons.photo_library_outlined,
+                                        size: 22,
+                                        color: AppColors.secondaryText,
+                                      ),
+                                    ),
+                                    const Gap(12),
+                                    const Text(
+                                      'Belum Ada Postingan',
+                                      style: TextStyle(
+                                        fontFamily: 'Georgia',
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primaryText,
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    Text(
+                                      isOwnProfile
+                                          ? 'Mulai bagikan foto pertama Anda ke jurnal profil.'
+                                          : 'Kreator ini belum menerbitkan foto.',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.secondaryText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                ),
+                            )
+                          else
+                            GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 0.92,
+                              ),
+                              itemCount: profile.posts.length,
+                              itemBuilder: (context, index) {
+                                final post = profile.posts[index];
+                                final imageUrl =
+                                    ApiConstants.getImageUrl(post.image);
+
+                                return GestureDetector(
+                                  onTap: () => _openPostDetail(post),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warmIvory,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (ctx, err, stack) =>
+                                                const Center(
+                                              child: Icon(
+                                                Icons.broken_image_outlined,
+                                                color: AppColors.secondaryText,
+                                              ),
+                                            ),
+                                          )
+                                        : const Center(
+                                            child: Icon(
+                                              Icons.image_outlined,
+                                              color: AppColors.secondaryText,
+                                            ),
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
     );
   }
 
@@ -703,30 +1093,31 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
-  Widget _buildStatColumn(
+  Widget _buildStatItem(
     String count,
     String label, {
     VoidCallback? onTap,
   }) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             count,
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              fontSize: 16.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryText,
             ),
           ),
           const Gap(2),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textPrimary,
+              fontSize: 12,
+              color: AppColors.secondaryText,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -737,39 +1128,8 @@ class _ProfileViewState extends State<ProfileView> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: content,
-    );
-  }
-
-  Widget _buildButton({
-    required String text,
-    required Color backgroundColor,
-    required Color textColor,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      height: 32,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          foregroundColor: textColor,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-      ),
     );
   }
 
@@ -798,7 +1158,7 @@ class _ProfileViewState extends State<ProfileView> {
     final coverUrl = ApiConstants.getImageUrl(highlight.coverImage);
 
     return Padding(
-      padding: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.only(right: 14),
       child: GestureDetector(
         onTap: () => _openHighlightViewer(
           highlight: highlight,
@@ -812,31 +1172,35 @@ class _ProfileViewState extends State<ProfileView> {
               padding: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border, width: 1.5),
+                border: Border.all(
+                  color: AppColors.softBeige,
+                  width: 1.8,
+                ),
               ),
               child: CircleAvatar(
                 radius: 26,
-                backgroundColor: AppColors.surface,
+                backgroundColor: AppColors.warmIvory,
                 backgroundImage:
                     coverUrl.isNotEmpty ? NetworkImage(coverUrl) : null,
                 child: coverUrl.isEmpty
                     ? const Icon(
-                        Icons.auto_awesome_outlined,
-                        color: AppColors.textPrimary,
-                        size: 22,
+                        Icons.bookmarks_outlined,
+                        color: AppColors.deepForest,
+                        size: 20,
                       )
                     : null,
               ),
             ),
-            const Gap(4),
+            const Gap(5),
             SizedBox(
-              width: 64,
+              width: 68,
               child: Text(
                 highlight.title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textPrimary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primaryText,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -881,8 +1245,10 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: AppColors.background,
-        title: const Text('Edit Nama Sorotan'),
+        title: const Text(
+          'Edit Judul Sorotan',
+          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -896,7 +1262,7 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text(
               'Batal',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.secondaryText),
             ),
           ),
           ElevatedButton(
@@ -926,10 +1292,6 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Simpan'),
           ),
         ],
@@ -941,20 +1303,26 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: AppColors.background,
-        title: const Text('Hapus Sorotan?'),
+        title: const Text(
+          'Hapus Sorotan?',
+          style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
+        ),
         content: Text(
           'Apakah Anda yakin ingin menghapus sorotan "$_title" dari profil Anda?',
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: AppColors.secondaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text(
               'Batal',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.secondaryText),
             ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogCtx);
               final profileVm = context.read<ProfileViewModel>();
@@ -975,10 +1343,11 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
                 );
               }
             },
-            child: const Text(
-              'Hapus',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.pureWhite,
             ),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -992,16 +1361,14 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
     final currentImage = hasItems
         ? ApiConstants.getImageUrl(items[_currentIndex].image)
         : ApiConstants.getImageUrl(widget.highlight.coverImage);
-    final currentCaption =
-        hasItems ? items[_currentIndex].caption : '';
+    final currentCaption = hasItems ? items[_currentIndex].caption : '';
     final coverUrl = ApiConstants.getImageUrl(widget.highlight.coverImage);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF161916),
       body: SafeArea(
         child: Stack(
           children: [
-            // Gambar Postingan Sorotan
             Positioned.fill(
               child: GestureDetector(
                 onTapUp: (details) {
@@ -1027,13 +1394,13 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
                           errorBuilder: (ctx, err, stack) => const Icon(
                             Icons.broken_image_outlined,
                             color: Colors.white54,
-                            size: 64,
+                            size: 56,
                           ),
                         )
                       : const Icon(
                           Icons.image_outlined,
                           color: Colors.white54,
-                          size: 64,
+                          size: 56,
                         ),
                 ),
               ),
@@ -1042,8 +1409,8 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
             // Header Sorotan + Tombol Edit & Hapus (Khusus Akun Pribadi)
             Positioned(
               top: 12,
-              left: 12,
-              right: 12,
+              left: 16,
+              right: 16,
               child: Column(
                 children: [
                   if (items.length > 1) ...[
@@ -1051,32 +1418,32 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
                       children: List.generate(items.length, (i) {
                         return Expanded(
                           child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            height: 3,
+                            margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                            height: 2.5,
                             decoration: BoxDecoration(
                               color: i <= _currentIndex
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
+                                  ? AppColors.softBeige
+                                  : Colors.white.withValues(alpha: 0.28),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         );
                       }),
                     ),
-                    const Gap(12),
+                    const Gap(14),
                   ],
                   Row(
                     children: [
                       CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppColors.surface,
+                        radius: 17,
+                        backgroundColor: AppColors.warmIvory,
                         backgroundImage:
                             coverUrl.isNotEmpty ? NetworkImage(coverUrl) : null,
                         child: coverUrl.isEmpty
                             ? const Icon(
-                                Icons.auto_awesome_outlined,
-                                size: 18,
-                                color: AppColors.textPrimary,
+                                Icons.bookmarks_outlined,
+                                size: 17,
+                                color: AppColors.deepForest,
                               )
                             : null,
                       ),
@@ -1086,35 +1453,40 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
                           _title,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // Fitur Edit & Hapus Sorotan hanya berlaku untuk akun pribadi
                       if (widget.isOwnProfile) ...[
                         IconButton(
                           onPressed: _showEditHighlightDialog,
                           icon: const Icon(
                             Icons.edit_outlined,
                             color: Colors.white,
+                            size: 21,
                           ),
-                          tooltip: 'Edit Sorotan',
+                          tooltip: 'Edit Nama Sorotan',
                         ),
                         IconButton(
                           onPressed: _confirmDeleteHighlight,
                           icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.redAccent,
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFF29B9B),
+                            size: 21,
                           ),
                           tooltip: 'Hapus Sorotan',
                         ),
                       ],
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 23,
+                        ),
                       ),
                     ],
                   ),
@@ -1122,27 +1494,29 @@ class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
               ),
             ),
 
-            // Caption di Bagian Bawah
             if (currentCaption.isNotEmpty)
               Positioned(
                 bottom: 24,
-                left: 16,
-                right: 16,
+                left: 18,
+                right: 18,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 16,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black54,
+                    color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Text(
                     currentCaption,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14.5,
+                      fontSize: 14,
                     ),
                   ),
                 ),
@@ -1211,12 +1585,14 @@ class _FollowListScreenState extends State<FollowListScreen> {
     });
   }
 
-  Future<void> _handleToggleFollow(int targetId, bool isCurrentlyFollowing) async {
+  Future<void> _handleToggleFollow(
+    int targetId,
+    bool isCurrentlyFollowing,
+  ) async {
     final currentUser = context.read<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
     if (currentUserId <= 0 || targetId <= 0) return;
 
-    // Optimistic UI update in both lists
     setState(() {
       for (final item in _followers) {
         if (int.tryParse(item['id'].toString()) == targetId) {
@@ -1240,7 +1616,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
     }
   }
 
-  void _openUserProfile(int userId, String username) async {
+  Future<void> _openUserProfile(int userId, String username) async {
     if (userId <= 0) return;
     await Navigator.push(
       context,
@@ -1265,20 +1641,24 @@ class _FollowListScreenState extends State<FollowListScreen> {
       length: 2,
       initialIndex: widget.initialTabIndex,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.pureWhite,
         appBar: AppBar(
           title: Text(
-            widget.username,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            '@${widget.username}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
+              color: AppColors.primaryText,
+            ),
           ),
           bottom: TabBar(
-            labelColor: AppColors.textPrimary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.textPrimary,
-            indicatorWeight: 1.8,
+            labelColor: AppColors.deepForest,
+            unselectedLabelColor: AppColors.secondaryText,
+            indicatorColor: AppColors.sageGreen,
+            indicatorWeight: 2,
             labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
             ),
             tabs: [
               Tab(text: '${_followers.length} Pengikut'),
@@ -1287,7 +1667,12 @@ class _FollowListScreenState extends State<FollowListScreen> {
           ),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.sageGreen,
+                  strokeWidth: 2,
+                ),
+              )
             : TabBarView(
                 children: [
                   _buildUserList(
@@ -1317,16 +1702,16 @@ class _FollowListScreenState extends State<FollowListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.people_outline,
-              size: 52,
-              color: AppColors.textSecondary,
+              Icons.people_outline_rounded,
+              size: 44,
+              color: AppColors.secondaryText,
             ),
-            const Gap(12),
+            const Gap(10),
             Text(
               emptyText,
               style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
+                fontSize: 14,
+                color: AppColors.secondaryText,
               ),
             ),
           ],
@@ -1335,6 +1720,8 @@ class _FollowListScreenState extends State<FollowListScreen> {
     }
 
     return RefreshIndicator(
+      color: AppColors.deepForest,
+      backgroundColor: AppColors.pureWhite,
       onRefresh: _loadBothLists,
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -1342,8 +1729,8 @@ class _FollowListScreenState extends State<FollowListScreen> {
         itemCount: users.length,
         separatorBuilder: (context, index) => const Divider(
           height: 1,
-          indent: 76,
-          color: AppColors.borderLight,
+          indent: 72,
+          color: AppColors.border,
         ),
         itemBuilder: (context, index) {
           final item = users[index];
@@ -1357,73 +1744,78 @@ class _FollowListScreenState extends State<FollowListScreen> {
           return ListTile(
             onTap: () => _openUserProfile(itemUserId, username),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
+              horizontal: 18,
               vertical: 4,
             ),
             leading: CircleAvatar(
-              radius: 22,
-              backgroundColor: AppColors.surface,
+              radius: 21,
+              backgroundColor: AppColors.warmIvory,
               backgroundImage:
                   avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
               child: avatarUrl.isEmpty
                   ? Text(
                       username.isNotEmpty ? username[0].toUpperCase() : 'U',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: AppColors.deepForest,
                       ),
                     )
                   : null,
             ),
             title: Text(
-              username,
+              name.isNotEmpty ? name : username,
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14.5,
-                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppColors.primaryText,
               ),
             ),
-            subtitle: name.isNotEmpty
-                ? Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  )
-                : null,
+            subtitle: Text(
+              '@$username',
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.secondaryText,
+              ),
+            ),
             trailing: isMe
                 ? null
                 : SizedBox(
                     height: 32,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          _handleToggleFollow(itemUserId, isFollowing),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isFollowing
-                            ? const Color(0xFFEFEFEF)
-                            : AppColors.primary,
-                        foregroundColor: isFollowing
-                            ? AppColors.textPrimary
-                            : Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        isFollowing ? 'Mengikuti' : 'Ikuti',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: isFollowing
-                              ? AppColors.textPrimary
-                              : Colors.white,
-                        ),
-                      ),
-                    ),
+                    child: isFollowing
+                        ? OutlinedButton(
+                            onPressed: () =>
+                                _handleToggleFollow(itemUserId, isFollowing),
+                            style: OutlinedButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: const Text(
+                              'Mengikuti',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primaryText,
+                              ),
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: () =>
+                                _handleToggleFollow(itemUserId, isFollowing),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.deepForest,
+                              foregroundColor: AppColors.pureWhite,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 14),
+                            ),
+                            child: const Text(
+                              'Ikuti',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                   ),
           );
         },

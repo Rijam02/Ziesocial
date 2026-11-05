@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
+import 'package:ziesocial/view/activity_view.dart';
 import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/view/explore_view.dart';
 import 'package:ziesocial/view/home_view.dart';
@@ -28,10 +30,10 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     _currentIndex = widget.initialIndex;
   }
 
-  void _onTabSelected(int index) async {
+  Future<void> _onTabSelected(int index) async {
     if (index == 2) {
-      // Tombol tambah postingan membuka CreatePostView
-      final created = await Navigator.push(
+      // Tombol unggah postingan
+      final created = await Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => const CreatePostView()),
       );
@@ -46,15 +48,19 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
     setState(() => _currentIndex = index);
 
-    if (index == 3) {
-      final currentUser = context.read<LoginViewModel>().user;
-      final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-      if (currentUserId > 0) {
-        context.read<ProfileViewModel>().fetchProfile(
-              currentUserId,
-              viewerId: currentUserId,
-            );
-      }
+    final currentUser = context.read<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+
+    if (index == 3 && currentUserId > 0) {
+      context.read<ProfileViewModel>().fetchNotifications(
+            currentUserId,
+            silent: false,
+          );
+    } else if (index == 4 && currentUserId > 0) {
+      context.read<ProfileViewModel>().fetchProfile(
+            currentUserId,
+            viewerId: currentUserId,
+          );
     }
   }
 
@@ -62,85 +68,226 @@ class _MainNavigationViewState extends State<MainNavigationView> {
   Widget build(BuildContext context) {
     final currentUser = context.watch<LoginViewModel>().user;
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-    final ownProfile = context.watch<ProfileViewModel>().getProfile(currentUserId);
-    final avatarUrl = ApiConstants.getImageUrl(ownProfile?.user.avatar ?? currentUser?.avatar);
+    final profileVm = context.watch<ProfileViewModel>();
+    final ownProfile = profileVm.getProfile(currentUserId);
+    final notificationsCount = profileVm.notifications.length;
+    final avatarUrl = ApiConstants.getImageUrl(
+      ownProfile?.user.avatar ?? currentUser?.avatar,
+    );
 
     final List<Widget> pages = [
       const HomeView(),
       const ExploreView(),
-      const SizedBox.shrink(), // Placeholder untuk tombol add
-      const ProfileView(), // Menampilkan profil user saat ini
+      const SizedBox.shrink(),
+      const ActivityView(),
+      const ProfileView(),
     ];
 
     return Scaffold(
+      backgroundColor: AppColors.pureWhite,
       body: IndexedStack(
         index: _currentIndex,
         children: pages,
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.pureWhite,
           border: Border(
-            top: BorderSide(color: AppColors.borderLight, width: 0.8),
+            top: BorderSide(color: AppColors.border, width: 1),
           ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onTabSelected,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(
-                _currentIndex == 0 ? Icons.home : Icons.home_outlined,
-                size: 28,
-              ),
-              label: 'Beranda',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(
-                _currentIndex == 1 ? Icons.search : Icons.search_outlined,
-                size: 28,
-              ),
-              label: 'Cari',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(
-                Icons.add_box_outlined,
-                size: 28,
-              ),
-              label: 'Tambah',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(1.5),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _currentIndex == 3
-                        ? AppColors.textPrimary
-                        : Colors.transparent,
-                    width: 1.5,
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 62,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  index: 0,
+                  icon: Icons.grid_view_outlined,
+                  activeIcon: Icons.grid_view_rounded,
+                  label: 'Beranda',
+                ),
+                _buildNavItem(
+                  index: 1,
+                  icon: Icons.search_rounded,
+                  activeIcon: Icons.search_rounded,
+                  label: 'Eksplor',
+                ),
+                // Center Compose Button
+                GestureDetector(
+                  onTap: () => _onTabSelected(2),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Container(
+                      width: 42,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.deepForest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: AppColors.pureWhite,
+                        size: 22,
+                      ),
+                    ),
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 12,
-                  backgroundColor: AppColors.surface,
-                  backgroundImage:
-                      avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                  child: avatarUrl.isEmpty
-                      ? Text(
-                          currentUser?.username.isNotEmpty == true
-                              ? currentUser!.username[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        )
-                      : null,
+                _buildNavItem(
+                  index: 3,
+                  icon: Icons.notifications_none_rounded,
+                  activeIcon: Icons.notifications_rounded,
+                  label: 'Aktivitas',
+                  badgeCount: notificationsCount,
+                ),
+                _buildProfileNavItem(
+                  index: 4,
+                  avatarUrl: avatarUrl,
+                  fallbackLetter: currentUser?.username.isNotEmpty == true
+                      ? currentUser!.username[0].toUpperCase()
+                      : 'U',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    int badgeCount = 0,
+  }) {
+    final bool isSelected = _currentIndex == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onTabSelected(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? activeIcon : icon,
+                  size: 22,
+                  color: isSelected
+                      ? AppColors.deepForest
+                      : AppColors.secondaryText,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: AppColors.sageGreen,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.pureWhite,
+                          width: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const Gap(4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected
+                    ? AppColors.deepForest
+                    : AppColors.secondaryText,
+                letterSpacing: 0.1,
+              ),
+            ),
+            const Gap(2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isSelected ? 12 : 0,
+              height: 2,
+              decoration: BoxDecoration(
+                color: AppColors.sageGreen,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileNavItem({
+    required int index,
+    required String avatarUrl,
+    required String fallbackLetter,
+  }) {
+    final bool isSelected = _currentIndex == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onTabSelected(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(1.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppColors.sageGreen : AppColors.border,
+                  width: 1.5,
                 ),
               ),
-              label: 'Profil',
+              child: CircleAvatar(
+                radius: 10,
+                backgroundColor: AppColors.warmIvory,
+                backgroundImage:
+                    avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl.isEmpty
+                    ? Text(
+                        fallbackLetter,
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryText,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const Gap(4),
+            Text(
+              'Profil',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected
+                    ? AppColors.deepForest
+                    : AppColors.secondaryText,
+                letterSpacing: 0.1,
+              ),
+            ),
+            const Gap(2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: isSelected ? 12 : 0,
+              height: 2,
+              decoration: BoxDecoration(
+                color: AppColors.sageGreen,
+                borderRadius: BorderRadius.circular(1),
+              ),
             ),
           ],
         ),
