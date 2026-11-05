@@ -18,7 +18,11 @@ class CreatePostViewModel extends ChangeNotifier {
   Future<bool> createPost({
     required int userId,
     required String imagePath,
+    Uint8List? imageBytes,
+    String? fileName,
     String caption = '',
+    bool isHighlight = false,
+    String highlightTitle = '',
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -31,9 +35,13 @@ class CreatePostViewModel extends ChangeNotifier {
         ApiConstants.createPost,
         filePath: imagePath,
         fieldName: 'image',
+        fileBytes: imageBytes,
+        fileName: fileName,
         fields: {
           'user_id': userId.toString(),
           'caption': caption,
+          'is_highlight': isHighlight ? '1' : '0',
+          'highlight_title': highlightTitle,
         },
       );
 

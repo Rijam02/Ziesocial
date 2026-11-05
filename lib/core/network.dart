@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -82,6 +83,8 @@ class ApiClient {
     String url, {
     required String filePath,
     required String fieldName,
+    Uint8List? fileBytes,
+    String? fileName,
     Map<String, String>? fields,
   }) async {
     final request = http.MultipartRequest(
@@ -89,12 +92,27 @@ class ApiClient {
       _parseUri(url),
     );
 
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        fieldName,
-        filePath,
-      ),
-    );
+    if (fileBytes != null) {
+      final safeName = (fileName != null && fileName.isNotEmpty)
+          ? fileName
+          : (filePath.split(RegExp(r'[/\\]')).last.isNotEmpty
+              ? filePath.split(RegExp(r'[/\\]')).last
+              : 'upload.jpg');
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          fieldName,
+          fileBytes,
+          filename: safeName.contains('.') ? safeName : '$safeName.jpg',
+        ),
+      );
+    } else {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          fieldName,
+          filePath,
+        ),
+      );
+    }
 
     if (fields != null) {
       request.fields.addAll(fields);

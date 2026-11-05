@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +7,7 @@ import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/viewmodel/create_post_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
+import 'package:ziesocial/viewmodel/profile_viewmodel.dart';
 
 class CreatePostView extends StatefulWidget {
   const CreatePostView({super.key});
@@ -17,12 +18,17 @@ class CreatePostView extends StatefulWidget {
 
 class _CreatePostViewState extends State<CreatePostView> {
   final _captionController = TextEditingController();
+  final _highlightTitleController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+
   XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
+  bool _isHighlight = false;
 
   @override
   void dispose() {
     _captionController.dispose();
+    _highlightTitleController.dispose();
     super.dispose();
   }
 
@@ -34,8 +40,8 @@ class _CreatePostViewState extends State<CreatePostView> {
 
     if (image == null) return;
 
-    final file = File(image.path);
-    final fileSize = await file.length();
+    final bytes = await image.readAsBytes();
+    final fileSize = bytes.lengthInBytes;
 
     if (fileSize > 5 * 1024 * 1024) {
       if (!mounted) return;
@@ -47,13 +53,24 @@ class _CreatePostViewState extends State<CreatePostView> {
 
     setState(() {
       _selectedImage = image;
+      _selectedImageBytes = bytes;
     });
   }
 
   Future<void> _handleShare() async {
-    if (_selectedImage == null) {
+    if (_selectedImage == null || _selectedImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih gambar postingan terlebih dahulu.')),
+      );
+      return;
+    }
+
+    final highlightTitle = _highlightTitleController.text.trim();
+    if (_isHighlight && highlightTitle.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Masukkan nama sorotan terlebih dahulu.'),
+        ),
       );
       return;
     }
@@ -67,18 +84,32 @@ class _CreatePostViewState extends State<CreatePostView> {
     }
 
     final userId = int.tryParse(currentUser.id) ?? 0;
+    final profileVm = context.read<ProfileViewModel>();
+
     final success = await context.read<CreatePostViewModel>().createPost(
           userId: userId,
           imagePath: _selectedImage!.path,
+          imageBytes: _selectedImageBytes,
+          fileName: _selectedImage!.name,
           caption: _captionController.text.trim(),
+          isHighlight: _isHighlight,
+          highlightTitle: highlightTitle,
         );
 
     if (!mounted) return;
 
     if (success) {
+      // Perbarui profil agar postingan dan sorotan terbaru langsung muncul
+      if (userId > 0) {
+        profileVm.fetchProfile(userId, viewerId: userId);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Postingan berhasil dibagikan!'),
+        SnackBar(
+          content: Text(
+            _isHighlight
+                ? 'Postingan & Sorotan "$highlightTitle" berhasil dibagikan!'
+                : 'Postingan berhasil dibagikan!',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -98,6 +129,9 @@ class _CreatePostViewState extends State<CreatePostView> {
   Widget build(BuildContext context) {
     final isLoading = context.watch<CreatePostViewModel>().isLoading;
     final currentUser = context.watch<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    final existingHighlights =
+        context.watch<ProfileViewModel>().getProfile(currentUserId)?.highlights ?? [];
     final avatarUrl = ApiConstants.getImageUrl(currentUser?.avatar);
 
     return Scaffold(
@@ -163,7 +197,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                       controller: _captionController,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        hintText: 'Tulis keterangan atau tambahkan polling...',
+                        hintText: 'Tulis keterangan postingan...',
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -173,11 +207,11 @@ class _CreatePostViewState extends State<CreatePostView> {
                     ),
                   ),
                   const Gap(8),
-                  if (_selectedImage != null)
+                  if (_selectedImageBytes != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: Image.file(
-                        File(_selectedImage!.path),
+                      child: Image.memory(
+                        _selectedImageBytes!,
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
@@ -189,13 +223,13 @@ class _CreatePostViewState extends State<CreatePostView> {
             const Divider(height: 1),
 
             // Large Image Preview or Picker
-            if (_selectedImage != null)
+            if (_selectedImageBytes != null)
               Container(
                 width: double.infinity,
                 constraints: const BoxConstraints(maxHeight: 380),
                 color: Colors.black,
-                child: Image.file(
-                  File(_selectedImage!.path),
+                child: Image.memory(
+                  _selectedImageBytes!,
                   fit: BoxFit.contain,
                 ),
               )
@@ -250,7 +284,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                 ),
               ),
 
-            if (_selectedImage != null) ...[
+            if (_selectedImageBytes != null) ...[
               const Gap(12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -265,26 +299,101 @@ class _CreatePostViewState extends State<CreatePostView> {
             ],
 
             const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.person_pin_outlined),
-              title: const Text('Tandai Orang'),
-              trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {},
+
+            // Fitur Jadikan Sorotan (Highlight)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(
+                            Icons.auto_awesome_outlined,
+                            color: AppColors.textPrimary,
+                          ),
+                          Gap(12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Jadikan Sorotan Profil',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Tampilkan postingan ini di menu sorotan profil Anda',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Switch(
+                        value: _isHighlight,
+                        activeColor: AppColors.primary,
+                        onChanged: (val) {
+                          setState(() {
+                            _isHighlight = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  if (_isHighlight) ...[
+                    const Gap(12),
+                    TextField(
+                      controller: _highlightTitleController,
+                      decoration: InputDecoration(
+                        labelText: 'Nama Sorotan',
+                        hintText: 'Contoh: Liburan, Kuliner, Momen...',
+                        prefixIcon: const Icon(Icons.bookmark_border),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    if (existingHighlights.isNotEmpty) ...[
+                      const Gap(8),
+                      const Text(
+                        'Atau pilih sorotan yang sudah ada:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const Gap(6),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: existingHighlights.map((hl) {
+                          return ActionChip(
+                            label: Text(hl.title),
+                            onPressed: () {
+                              setState(() {
+                                _highlightTitleController.text = hl.title;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
             ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.location_on_outlined),
-              title: const Text('Tambahkan Lokasi'),
-              trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {},
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.music_note_outlined),
-              title: const Text('Tambahkan Musik'),
-              trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {},
-            ),
+
             const Divider(height: 1),
           ],
         ),

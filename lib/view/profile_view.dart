@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/model/post_model.dart';
+import 'package:ziesocial/model/profile_model.dart';
 import 'package:ziesocial/view/edit_profile_view.dart';
 import 'package:ziesocial/view/login_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
@@ -153,7 +154,7 @@ class _ProfileViewState extends State<ProfileView> {
         backgroundColor: AppColors.background,
         title: const Text('Hapus Akun Permanen?'),
         content: const Text(
-          'Semua data dari akun ini (profil, postingan, pengikut, mengikuti, suka, dan komentar) akan dihapus secara permanen dari aplikasi ZieSocial dan database.',
+          'Semua data dari akun ini akan dihapus secara permanen dari aplikasi ZieSocial.',
         ),
         actions: [
           TextButton(
@@ -181,7 +182,7 @@ class _ProfileViewState extends State<ProfileView> {
                 homeVm.fetchPosts();
                 messenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Akun beserta seluruh datanya berhasil dihapus.'),
+                    content: Text('Akun berhasil dihapus.'),
                   ),
                 );
                 navigator.pushAndRemoveUntil(
@@ -289,6 +290,8 @@ class _ProfileViewState extends State<ProfileView> {
     final profile = profileVm.getProfile(targetUserId);
     final isLoading = profileVm.isUserLoading(targetUserId);
     final errorMessage = profileVm.getErrorMessage(targetUserId);
+    final hasUnseenStory =
+        context.watch<HomeViewModel>().hasUnseenStoryForUser(targetUserId);
 
     final avatarUrl = ApiConstants.getImageUrl(profile?.user.avatar);
     final displayedUsername = profile?.user.username ?? widget.username ?? 'Profil';
@@ -362,9 +365,11 @@ class _ProfileViewState extends State<ProfileView> {
                             // Avatar
                             Container(
                               padding: const EdgeInsets.all(2.5),
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: AppColors.storyGradient,
+                                gradient: hasUnseenStory
+                                    ? AppColors.storyGradient
+                                    : null,
                               ),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
@@ -547,20 +552,26 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                       const Gap(16),
 
-                      // 4. Story Highlights Mock
-                      SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          children: [
-                            _buildHighlightItem('Liburan', Icons.beach_access),
-                            _buildHighlightItem('Kuliner', Icons.restaurant),
-                            _buildHighlightItem('Kegiatan', Icons.fitness_center),
-                            _buildHighlightItem('Musik', Icons.music_note),
-                          ],
+                      // 4. Sorotan (Hanya muncul jika user telah membuat sorotan)
+                      if (profile.highlights.isNotEmpty) ...[
+                        SizedBox(
+                          height: 86,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: profile.highlights.length,
+                            itemBuilder: (context, index) {
+                              final hl = profile.highlights[index];
+                              return _buildHighlightItem(
+                                highlight: hl,
+                                isOwnProfile: isOwnProfile,
+                                currentUserId: currentUserId,
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                        const Gap(8),
+                      ],
                       const Divider(height: 1),
 
                       // 5. Tabs (Grid Posts, Tagged)
@@ -762,29 +773,382 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  Widget _buildHighlightItem(String title, IconData icon) {
+  void _openHighlightViewer({
+    required HighlightModel highlight,
+    required bool isOwnProfile,
+    required int currentUserId,
+  }) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (ctx) => _HighlightViewerDialog(
+        highlight: highlight,
+        isOwnProfile: isOwnProfile,
+        currentUserId: currentUserId,
+        onChanged: _loadProfile,
+      ),
+    );
+  }
+
+  Widget _buildHighlightItem({
+    required HighlightModel highlight,
+    required bool isOwnProfile,
+    required int currentUserId,
+  }) {
+    final coverUrl = ApiConstants.getImageUrl(highlight.coverImage);
+
     return Padding(
       padding: const EdgeInsets.only(right: 16),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border, width: 1.5),
+      child: GestureDetector(
+        onTap: () => _openHighlightViewer(
+          highlight: highlight,
+          isOwnProfile: isOwnProfile,
+          currentUserId: currentUserId,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border, width: 1.5),
+              ),
+              child: CircleAvatar(
+                radius: 26,
+                backgroundColor: AppColors.surface,
+                backgroundImage:
+                    coverUrl.isNotEmpty ? NetworkImage(coverUrl) : null,
+                child: coverUrl.isEmpty
+                    ? const Icon(
+                        Icons.auto_awesome_outlined,
+                        color: AppColors.textPrimary,
+                        size: 22,
+                      )
+                    : null,
+              ),
             ),
-            child: CircleAvatar(
-              radius: 26,
-              backgroundColor: AppColors.surface,
-              child: Icon(icon, color: AppColors.textPrimary, size: 24),
+            const Gap(4),
+            SizedBox(
+              width: 64,
+              child: Text(
+                highlight.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HighlightViewerDialog extends StatefulWidget {
+  final HighlightModel highlight;
+  final bool isOwnProfile;
+  final int currentUserId;
+  final VoidCallback onChanged;
+
+  const _HighlightViewerDialog({
+    required this.highlight,
+    required this.isOwnProfile,
+    required this.currentUserId,
+    required this.onChanged,
+  });
+
+  @override
+  State<_HighlightViewerDialog> createState() => _HighlightViewerDialogState();
+}
+
+class _HighlightViewerDialogState extends State<_HighlightViewerDialog> {
+  late String _title;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.highlight.title;
+  }
+
+  void _showEditHighlightDialog() {
+    final controller = TextEditingController(text: _title);
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        title: const Text('Edit Nama Sorotan'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nama Sorotan',
+            hintText: 'Masukkan nama sorotan...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
-          const Gap(4),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
+          ElevatedButton(
+            onPressed: () async {
+              final newTitle = controller.text.trim();
+              if (newTitle.isEmpty) return;
+              Navigator.pop(dialogCtx);
+
+              final success = await context
+                  .read<ProfileViewModel>()
+                  .updateHighlight(
+                    highlightId: widget.highlight.id,
+                    userId: widget.currentUserId,
+                    title: newTitle,
+                  );
+
+              if (!mounted) return;
+              if (success) {
+                setState(() {
+                  _title = newTitle;
+                });
+                widget.onChanged();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Nama sorotan berhasil diperbarui.'),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Simpan'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _confirmDeleteHighlight() {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.background,
+        title: const Text('Hapus Sorotan?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus sorotan "$_title" dari profil Anda?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final profileVm = context.read<ProfileViewModel>();
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
+
+              final deleted = await profileVm.deleteHighlight(
+                highlightId: widget.highlight.id,
+                userId: widget.currentUserId,
+              );
+
+              if (!mounted) return;
+              if (deleted) {
+                widget.onChanged();
+                navigator.pop();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Sorotan berhasil dihapus.')),
+                );
+              }
+            },
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = widget.highlight.items;
+    final hasItems = items.isNotEmpty;
+    final currentImage = hasItems
+        ? ApiConstants.getImageUrl(items[_currentIndex].image)
+        : ApiConstants.getImageUrl(widget.highlight.coverImage);
+    final currentCaption =
+        hasItems ? items[_currentIndex].caption : '';
+    final coverUrl = ApiConstants.getImageUrl(widget.highlight.coverImage);
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Gambar Postingan Sorotan
+            Positioned.fill(
+              child: GestureDetector(
+                onTapUp: (details) {
+                  if (!hasItems) return;
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  if (details.globalPosition.dx < screenWidth * 0.35) {
+                    if (_currentIndex > 0) {
+                      setState(() => _currentIndex--);
+                    }
+                  } else {
+                    if (_currentIndex < items.length - 1) {
+                      setState(() => _currentIndex++);
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  }
+                },
+                child: Center(
+                  child: currentImage.isNotEmpty
+                      ? Image.network(
+                          currentImage,
+                          fit: BoxFit.contain,
+                          errorBuilder: (ctx, err, stack) => const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white54,
+                            size: 64,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.image_outlined,
+                          color: Colors.white54,
+                          size: 64,
+                        ),
+                ),
+              ),
+            ),
+
+            // Header Sorotan + Tombol Edit & Hapus (Khusus Akun Pribadi)
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: Column(
+                children: [
+                  if (items.length > 1) ...[
+                    Row(
+                      children: List.generate(items.length, (i) {
+                        return Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: i <= _currentIndex
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const Gap(12),
+                  ],
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.surface,
+                        backgroundImage:
+                            coverUrl.isNotEmpty ? NetworkImage(coverUrl) : null,
+                        child: coverUrl.isEmpty
+                            ? const Icon(
+                                Icons.auto_awesome_outlined,
+                                size: 18,
+                                color: AppColors.textPrimary,
+                              )
+                            : null,
+                      ),
+                      const Gap(10),
+                      Expanded(
+                        child: Text(
+                          _title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Fitur Edit & Hapus Sorotan hanya berlaku untuk akun pribadi
+                      if (widget.isOwnProfile) ...[
+                        IconButton(
+                          onPressed: _showEditHighlightDialog,
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: Colors.white,
+                          ),
+                          tooltip: 'Edit Sorotan',
+                        ),
+                        IconButton(
+                          onPressed: _confirmDeleteHighlight,
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                          ),
+                          tooltip: 'Hapus Sorotan',
+                        ),
+                      ],
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Caption di Bagian Bawah
+            if (currentCaption.isNotEmpty)
+              Positioned(
+                bottom: 24,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    currentCaption,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

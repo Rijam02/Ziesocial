@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/core/network.dart';
 import 'package:ziesocial/model/post_model.dart';
+import 'package:ziesocial/model/profile_model.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final ApiClient _apiClient;
@@ -12,14 +13,161 @@ class HomeViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  StoryGroupModel? _myStoryGroup;
+  List<StoryGroupModel> _storyGroups = [];
+  bool _isUploadingStory = false;
+
   List<PostModel> get posts => _posts;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  StoryGroupModel? get myStoryGroup => _myStoryGroup;
+  List<StoryGroupModel> get storyGroups => _storyGroups;
+  bool get isUploadingStory => _isUploadingStory;
+
+  StoryGroupModel? getStoryGroupForUser(int userId) {
+    if (_myStoryGroup != null && _myStoryGroup!.userId == userId) {
+      return _myStoryGroup;
+    }
+    for (final g in _storyGroups) {
+      if (g.userId == userId) return g;
+    }
+    return null;
+  }
+
+  bool hasUnseenStoryForUser(int userId) {
+    final g = getStoryGroupForUser(userId);
+    if (g == null) return false;
+    return g.hasStory && g.hasUnseenStory;
+  }
+
+  bool hasActiveStoryForUser(int userId) {
+    final g = getStoryGroupForUser(userId);
+    if (g == null) return false;
+    return g.hasStory;
+  }
+
+  Future<void> fetchStories({int? viewerId}) async {
+    try {
+      final url = viewerId != null
+          ? '${ApiConstants.readStories}?viewer_id=$viewerId'
+          : ApiConstants.readStories;
+      final response = await _apiClient.get(url);
+
+      if (response['my_story'] is Map<String, dynamic>) {
+        _myStoryGroup = StoryGroupModel.fromJson(
+          response['my_story'] as Map<String, dynamic>,
+        );
+      } else {
+        _myStoryGroup = null;
+      }
+
+      if (response['data'] is List) {
+        _storyGroups = (response['data'] as List)
+            .map((e) => StoryGroupModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else {
+        _storyGroups = [];
+      }
+      notifyListeners();
+    } catch (_) {
+      // Keep existing stories if network error occurs
+    }
+  }
+
+  Future<bool> createStory({
+    required int userId,
+    required String imagePath,
+    Uint8List? imageBytes,
+    String? fileName,
+    String caption = '',
+  }) async {
+    _isUploadingStory = true;
+    notifyListeners();
+
+    try {
+      await _apiClient.upload(
+        ApiConstants.createStory,
+        filePath: imagePath,
+        fieldName: 'image',
+        fileBytes: imageBytes,
+        fileName: fileName,
+        fields: {
+          'user_id': userId.toString(),
+          'caption': caption,
+        },
+      );
+      await fetchStories(viewerId: userId);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _isUploadingStory = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> markStoryViewed({
+    required int viewerId,
+    int? storyId,
+    int? targetUserId,
+  }) async {
+    if (viewerId <= 0) return;
+
+    // Optimistic update: hilangkan border setelah dilihat
+    if (targetUserId != null) {
+      if (_myStoryGroup != null && _myStoryGroup!.userId == targetUserId) {
+        final updatedStories = _myStoryGroup!.stories
+            .map((s) => (storyId == null || s.id == storyId)
+                ? s.copyWith(isViewed: true)
+                : s)
+            .toList();
+        final anyUnseen = updatedStories.any((s) => !s.isViewed);
+        _myStoryGroup = _myStoryGroup!.copyWith(
+          stories: updatedStories,
+          hasUnseenStory: anyUnseen,
+        );
+      } else {
+        _storyGroups = _storyGroups.map((g) {
+          if (g.userId == targetUserId) {
+            final updatedStories = g.stories
+                .map((s) => (storyId == null || s.id == storyId)
+                    ? s.copyWith(isViewed: true)
+                    : s)
+                .toList();
+            final anyUnseen = updatedStories.any((s) => !s.isViewed);
+            return g.copyWith(
+              stories: updatedStories,
+              hasUnseenStory: anyUnseen,
+            );
+          }
+          return g;
+        }).toList();
+      }
+      notifyListeners();
+    }
+
+    try {
+      await _apiClient.post(
+        ApiConstants.viewStory,
+        body: {
+          'viewer_id': viewerId,
+          if (storyId != null) 'story_id': storyId,
+          if (targetUserId != null) 'target_user_id': targetUserId,
+        },
+      );
+      await fetchStories(viewerId: viewerId);
+    } catch (_) {}
+  }
 
   Future<void> fetchPosts({int? viewerId}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+
+    // Muat stories bersamaan dengan beranda
+    fetchStories(viewerId: viewerId);
 
     try {
       final url = viewerId != null

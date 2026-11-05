@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +23,7 @@ class _EditProfileViewState extends State<EditProfileView> {
   late final TextEditingController _bioController;
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedAvatar;
+  Uint8List? _avatarBytes;
   bool _isSaving = false;
 
   @override
@@ -45,7 +46,11 @@ class _EditProfileViewState extends State<EditProfileView> {
       imageQuality: 85,
     );
     if (file != null) {
-      setState(() => _selectedAvatar = file);
+      final bytes = await file.readAsBytes();
+      setState(() {
+        _selectedAvatar = file;
+        _avatarBytes = bytes;
+      });
     }
   }
 
@@ -58,6 +63,8 @@ class _EditProfileViewState extends State<EditProfileView> {
           name: _nameController.text.trim(),
           bio: _bioController.text.trim(),
           avatarPath: _selectedAvatar?.path,
+          avatarBytes: _avatarBytes,
+          avatarFileName: _selectedAvatar?.name,
         );
 
     setState(() => _isSaving = false);
@@ -130,10 +137,10 @@ class _EditProfileViewState extends State<EditProfileView> {
                     child: CircleAvatar(
                       radius: 46,
                       backgroundColor: AppColors.surface,
-                      backgroundImage: _selectedAvatar != null
-                          ? FileImage(File(_selectedAvatar!.path))
+                      backgroundImage: _avatarBytes != null
+                          ? MemoryImage(_avatarBytes!)
                           : (avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) as ImageProvider : null),
-                      child: _selectedAvatar == null && avatarUrl.isEmpty
+                      child: _avatarBytes == null && avatarUrl.isEmpty
                           ? Text(
                               widget.user.name.isNotEmpty
                                   ? widget.user.name[0].toUpperCase()

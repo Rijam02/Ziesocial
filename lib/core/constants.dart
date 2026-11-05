@@ -36,6 +36,15 @@ class ApiConstants {
   // Notifications / Activity
   static String get readNotifications => '$baseUrl/notifications/read.php';
 
+  // Stories (24 Jam)
+  static String get createStory => '$baseUrl/stories/create.php';
+  static String get readStories => '$baseUrl/stories/read.php';
+  static String get viewStory => '$baseUrl/stories/view.php';
+
+  // Highlights (Sorotan Profil)
+  static String get updateHighlight => '$baseUrl/highlights/update.php';
+  static String get deleteHighlight => '$baseUrl/highlights/delete.php';
+
   // Image URL
   static String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';

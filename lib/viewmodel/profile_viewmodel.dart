@@ -296,17 +296,21 @@ class ProfileViewModel extends ChangeNotifier {
     required String name,
     required String bio,
     String? avatarPath,
+    Uint8List? avatarBytes,
+    String? avatarFileName,
   }) async {
     _loadingUserIds.add(userId);
     notifyListeners();
 
     try {
       Map<String, dynamic> response;
-      if (avatarPath != null && avatarPath.isNotEmpty) {
+      if ((avatarPath != null && avatarPath.isNotEmpty) || avatarBytes != null) {
         response = await _apiClient.upload(
           ApiConstants.updateProfile,
-          filePath: avatarPath,
+          filePath: avatarPath ?? 'avatar.jpg',
           fieldName: 'avatar',
+          fileBytes: avatarBytes,
+          fileName: avatarFileName,
           fields: {
             'user_id': userId.toString(),
             'name': name,
@@ -341,6 +345,71 @@ class ProfileViewModel extends ChangeNotifier {
     } finally {
       _loadingUserIds.remove(userId);
       notifyListeners();
+    }
+  }
+
+  // Edit Highlight Title (Sorotan)
+  Future<bool> updateHighlight({
+    required int highlightId,
+    required int userId,
+    required String title,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiConstants.updateHighlight,
+        body: {
+          'highlight_id': highlightId,
+          'user_id': userId,
+          'title': title,
+        },
+      );
+
+      final currentProfile = _profiles[userId];
+      if (currentProfile != null) {
+        final updatedHighlights = currentProfile.highlights.map((hl) {
+          if (hl.id == highlightId) {
+            return hl.copyWith(title: title);
+          }
+          return hl;
+        }).toList();
+        _profiles[userId] = currentProfile.copyWith(
+          highlights: updatedHighlights,
+        );
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Delete Highlight (Sorotan)
+  Future<bool> deleteHighlight({
+    required int highlightId,
+    required int userId,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiConstants.deleteHighlight,
+        body: {
+          'highlight_id': highlightId,
+          'user_id': userId,
+        },
+      );
+
+      final currentProfile = _profiles[userId];
+      if (currentProfile != null) {
+        final updatedHighlights = currentProfile.highlights
+            .where((hl) => hl.id != highlightId)
+            .toList();
+        _profiles[userId] = currentProfile.copyWith(
+          highlights: updatedHighlights,
+        );
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 

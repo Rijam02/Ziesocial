@@ -252,6 +252,8 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
     final author = widget.post.author;
     final avatarUrl = ApiConstants.getImageUrl(author?.avatar);
     final postImageUrl = ApiConstants.getImageUrl(widget.post.image);
+    final authorId = author?.id ?? 0;
+    final hasUnseenStory = context.watch<HomeViewModel>().hasUnseenStoryForUser(authorId);
 
     return Container(
       color: AppColors.background,
@@ -267,13 +269,13 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
                 GestureDetector(
                   onTap: _openAuthorProfile,
                   child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
+                    padding: EdgeInsets.all(hasUnseenStory ? 2 : 0),
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: AppColors.storyGradient,
+                      gradient: hasUnseenStory ? AppColors.storyGradient : null,
                     ),
                     child: Container(
-                      padding: const EdgeInsets.all(1.5),
+                      padding: EdgeInsets.all(hasUnseenStory ? 1.5 : 0),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white,
