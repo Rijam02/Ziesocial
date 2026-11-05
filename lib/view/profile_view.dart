@@ -927,14 +927,14 @@ class _ProfileViewState extends State<ProfileView> {
 
                           // 3. Editorial Posts Section Header
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                            padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Row(
                                   children: [
                                     Icon(
-                                      Icons.grid_view_rounded,
+                                      Icons.grid_on_rounded,
                                       size: 16,
                                       color: AppColors.deepForest,
                                     ),
@@ -960,8 +960,9 @@ class _ProfileViewState extends State<ProfileView> {
                               ],
                             ),
                           ),
+                          const Divider(height: 1, color: AppColors.border),
 
-                          // 4. Posts Grid
+                          // 4. Posts Grid (Full-bleed, rapat, hanya dipisahkan garis tipis seperti gambar ke-2)
                           if (profile.posts.isEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -1013,56 +1014,53 @@ class _ProfileViewState extends State<ProfileView> {
                               ),
                             )
                           else
-                            GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                              physics: const NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: 0.92,
-                              ),
-                              itemCount: profile.posts.length,
-                              itemBuilder: (context, index) {
-                                final post = profile.posts[index];
-                                final imageUrl =
-                                    ApiConstants.getImageUrl(post.image);
+                            ColoredBox(
+                              color: AppColors.border,
+                              child: GridView.builder(
+                                padding: const EdgeInsets.only(bottom: 28),
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 1.5,
+                                  mainAxisSpacing: 1.5,
+                                  childAspectRatio: 0.78,
+                                ),
+                                itemCount: profile.posts.length,
+                                itemBuilder: (context, index) {
+                                  final post = profile.posts[index];
+                                  final imageUrl =
+                                      ApiConstants.getImageUrl(post.image);
 
-                                return GestureDetector(
-                                  onTap: () => _openPostDetail(post),
-                                  child: Container(
-                                    decoration: BoxDecoration(
+                                  return GestureDetector(
+                                    onTap: () => _openPostDetail(post),
+                                    child: Container(
                                       color: AppColors.warmIvory,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: AppColors.border,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: imageUrl.isNotEmpty
-                                        ? Image.network(
-                                            imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) =>
-                                                const Center(
+                                      child: imageUrl.isNotEmpty
+                                          ? Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              errorBuilder: (ctx, err, stack) =>
+                                                  const Center(
+                                                child: Icon(
+                                                  Icons.broken_image_outlined,
+                                                  color: AppColors.secondaryText,
+                                                ),
+                                              ),
+                                            )
+                                          : const Center(
                                               child: Icon(
-                                                Icons.broken_image_outlined,
+                                                Icons.image_outlined,
                                                 color: AppColors.secondaryText,
                                               ),
                                             ),
-                                          )
-                                        : const Center(
-                                            child: Icon(
-                                              Icons.image_outlined,
-                                              color: AppColors.secondaryText,
-                                            ),
-                                          ),
-                                  ),
-                                );
-                              },
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                         ],
                       ),

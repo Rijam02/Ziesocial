@@ -1,3 +1,5 @@
+import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
@@ -437,107 +439,29 @@ class _PostCardState extends State<PostCard>
           ),
           const Gap(12),
 
-          // 2. Framed Editorial Photograph
+          // 2. Framed Editorial Photograph (Mendukung Pinch-to-Zoom keluar kotak postingan)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: GestureDetector(
+            child: _ZoomablePostImage(
+              imageUrl: postImageUrl,
               onDoubleTap: _triggerDoubleTapLike,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.warmIvory,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (postImageUrl.isNotEmpty)
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minHeight: 220,
-                          maxHeight: 460,
+              overlayBadge: _showHeartAnimation
+                  ? ScaleTransition(
+                      scale: _heartScaleAnim,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.pureWhite.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
                         ),
-                        child: Image.network(
-                          postImageUrl,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return AspectRatio(
-                              aspectRatio: 4 / 3,
-                              child: Container(
-                                color: AppColors.warmIvory,
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.sageGreen,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return AspectRatio(
-                              aspectRatio: 4 / 3,
-                              child: Container(
-                                color: AppColors.warmIvory,
-                                alignment: Alignment.center,
-                                child: const Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image_outlined,
-                                      size: 32,
-                                      color: AppColors.secondaryText,
-                                    ),
-                                    Gap(6),
-                                    Text(
-                                      'Gambar tidak tersedia',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.secondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    else
-                      Container(
-                        height: 220,
-                        width: double.infinity,
-                        color: AppColors.warmIvory,
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Tanpa gambar',
-                          style: TextStyle(color: AppColors.secondaryText),
+                        child: const Icon(
+                          Icons.favorite_rounded,
+                          size: 48,
+                          color: AppColors.error,
                         ),
                       ),
-
-                    // Double-tap heart animation
-                    if (_showHeartAnimation)
-                      ScaleTransition(
-                        scale: _heartScaleAnim,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.pureWhite.withValues(alpha: 0.9),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.favorite_rounded,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+                    )
+                  : null,
             ),
           ),
 
@@ -690,3 +614,395 @@ class _PostCardState extends State<PostCard>
     }
   }
 }
+
+/// Widget Foto Postingan yang mendukung Pinch-to-Zoom keluar dari batas kotak postingan
+/// (melayang di atas elemen layar lainnya melalui OverlayEntry) dan kembali mulus ke
+/// posisi semula saat jari dilepaskan.
+class _ZoomablePostImage extends StatefulWidget {
+  final String imageUrl;
+  final VoidCallback onDoubleTap;
+  final Widget? overlayBadge;
+
+  const _ZoomablePostImage({
+    required this.imageUrl,
+    required this.onDoubleTap,
+    this.overlayBadge,
+  });
+
+  @override
+  State<_ZoomablePostImage> createState() => _ZoomablePostImageState();
+}
+
+class _ZoomablePostImageState extends State<_ZoomablePostImage>
+    with SingleTickerProviderStateMixin {
+  final GlobalKey _boxKey = GlobalKey();
+  OverlayEntry? _overlayEntry;
+  late AnimationController _resetController;
+
+  bool _isZooming = false;
+  Rect? _originRect;
+
+  double _currentScale = 1.0;
+  Offset _currentOffset = Offset.zero;
+
+  double _baseScale = 1.0;
+  Offset _baseOffset = Offset.zero;
+  double _initialDistance = 1.0;
+  Offset _referenceMidpoint = Offset.zero;
+  Offset _focalVectorFromCenter = Offset.zero;
+
+  double _animStartScale = 1.0;
+  Offset _animStartOffset = Offset.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    )
+      ..addListener(() {
+        final t = Curves.easeOutCubic.transform(_resetController.value);
+        _currentScale = lerpDouble(_animStartScale, 1.0, t) ?? 1.0;
+        _currentOffset = Offset.lerp(_animStartOffset, Offset.zero, t) ?? Offset.zero;
+        _overlayEntry?.markNeedsBuild();
+      })
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _removeOverlay();
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay(notifyState: false);
+    _resetController.dispose();
+    super.dispose();
+  }
+
+  void _removeOverlay({bool notifyState = true}) {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    if (_isZooming) {
+      _isZooming = false;
+      if (notifyState && mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  void _handlePinchStart(Map<int, Offset> pointers) {
+    if (widget.imageUrl.isEmpty || pointers.length < 2) return;
+
+    if (_resetController.isAnimating) {
+      _resetController.stop();
+    }
+
+    final renderObj = _boxKey.currentContext?.findRenderObject();
+    if (renderObj is! RenderBox || !renderObj.hasSize) return;
+
+    final topLeft = renderObj.localToGlobal(Offset.zero);
+    _originRect = topLeft & renderObj.size;
+
+    final pts = pointers.values.toList();
+    final p1 = pts[0];
+    final p2 = pts[1];
+
+    _referenceMidpoint = (p1 + p2) / 2.0;
+    final dist = (p1 - p2).distance;
+    _initialDistance = dist < 10.0 ? 10.0 : dist;
+    _focalVectorFromCenter = _referenceMidpoint - _originRect!.center;
+
+    _baseScale = 1.0;
+    _baseOffset = Offset.zero;
+    _currentScale = 1.0;
+    _currentOffset = Offset.zero;
+
+    if (_overlayEntry == null) {
+      _overlayEntry = _buildZoomOverlayEntry();
+      Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+    }
+
+    setState(() {
+      _isZooming = true;
+    });
+  }
+
+  void _handlePinchUpdate(Map<int, Offset> pointers) {
+    if (!_isZooming || _originRect == null || pointers.isEmpty) return;
+
+    if (pointers.length >= 2) {
+      final pts = pointers.values.toList();
+      final p1 = pts[0];
+      final p2 = pts[1];
+
+      final midpoint = (p1 + p2) / 2.0;
+      final dist = (p1 - p2).distance;
+      final rawScale = _baseScale * (dist / _initialDistance);
+      final newScale = rawScale.clamp(1.0, 4.5);
+
+      final panDelta = midpoint - _referenceMidpoint;
+      _currentOffset =
+          _baseOffset + panDelta - (_focalVectorFromCenter * (newScale - _baseScale));
+      _currentScale = newScale;
+    } else if (pointers.length == 1) {
+      final p1 = pointers.values.first;
+      final panDelta = p1 - _referenceMidpoint;
+      _currentOffset = _baseOffset + panDelta;
+    }
+
+    _overlayEntry?.markNeedsBuild();
+  }
+
+  void _handlePointerCountChanged(Map<int, Offset> pointers) {
+    if (!_isZooming || _originRect == null || pointers.isEmpty) return;
+
+    _baseScale = _currentScale;
+    _baseOffset = _currentOffset;
+
+    if (pointers.length >= 2) {
+      final pts = pointers.values.toList();
+      final p1 = pts[0];
+      final p2 = pts[1];
+      _referenceMidpoint = (p1 + p2) / 2.0;
+      final dist = (p1 - p2).distance;
+      _initialDistance = dist < 10.0 ? 10.0 : dist;
+      final currentCenter = _originRect!.center + _currentOffset;
+      _focalVectorFromCenter =
+          (_referenceMidpoint - currentCenter) / (_currentScale == 0 ? 1.0 : _currentScale);
+    } else if (pointers.length == 1) {
+      _referenceMidpoint = pointers.values.first;
+    }
+  }
+
+  void _handlePinchEnd() {
+    if (!_isZooming) return;
+
+    _animStartScale = _currentScale;
+    _animStartOffset = _currentOffset;
+    _resetController.forward(from: 0.0);
+  }
+
+  OverlayEntry _buildZoomOverlayEntry() {
+    return OverlayEntry(
+      builder: (context) {
+        final rect = _originRect;
+        if (rect == null) return const SizedBox.shrink();
+
+        final backdropOpacity =
+            ((_currentScale - 1.0) / 2.8 * 0.58).clamp(0.0, 0.58);
+
+        return IgnorePointer(
+          ignoring: true,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Latar redup halus di belakang foto saat di-zoom keluar kotak
+                ColoredBox(
+                  color: Colors.black.withValues(alpha: backdropOpacity),
+                ),
+                Positioned.fromRect(
+                  rect: rect,
+                  child: Transform.translate(
+                    offset: _currentOffset,
+                    child: Transform.scale(
+                      scale: _currentScale,
+                      alignment: Alignment.center,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.warmIvory,
+                          borderRadius: BorderRadius.circular(
+                            _currentScale > 1.08 ? 2 : 8,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Image.network(
+                          widget.imageUrl,
+                          width: rect.width,
+                          height: rect.height,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RawGestureDetector(
+      gestures: {
+        _MultiTouchPinchRecognizer:
+            GestureRecognizerFactoryWithHandlers<_MultiTouchPinchRecognizer>(
+          () => _MultiTouchPinchRecognizer(),
+          (_MultiTouchPinchRecognizer instance) {
+            instance
+              ..onPinchStart = _handlePinchStart
+              ..onPinchUpdate = _handlePinchUpdate
+              ..onPointerCountChanged = _handlePointerCountChanged
+              ..onPinchEnd = _handlePinchEnd;
+          },
+        ),
+      },
+      child: GestureDetector(
+        onDoubleTap: widget.onDoubleTap,
+        child: Container(
+          key: _boxKey,
+          decoration: BoxDecoration(
+            color: AppColors.warmIvory,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.border, width: 1),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (widget.imageUrl.isNotEmpty)
+                Opacity(
+                  opacity: _isZooming ? 0.0 : 1.0,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 220,
+                      maxHeight: 460,
+                    ),
+                    child: Image.network(
+                      widget.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: Container(
+                            color: AppColors.warmIvory,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.sageGreen,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: Container(
+                            color: AppColors.warmIvory,
+                            alignment: Alignment.center,
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.broken_image_outlined,
+                                  size: 32,
+                                  color: AppColors.secondaryText,
+                                ),
+                                Gap(6),
+                                Text(
+                                  'Gambar tidak tersedia',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  height: 220,
+                  width: double.infinity,
+                  color: AppColors.warmIvory,
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Tanpa gambar',
+                    style: TextStyle(color: AppColors.secondaryText),
+                  ),
+                ),
+
+              if (widget.overlayBadge != null) widget.overlayBadge!,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom GestureRecognizer yang hanya mengambil alih GestureArena ketika >= 2 jari
+/// menyentuh foto, sehingga scroll 1 jari dan double-tap tetap berjalan mulus.
+class _MultiTouchPinchRecognizer extends OneSequenceGestureRecognizer {
+  final Map<int, Offset> _pointers = {};
+  bool _isPinching = false;
+
+  void Function(Map<int, Offset> pointers)? onPinchStart;
+  void Function(Map<int, Offset> pointers)? onPinchUpdate;
+  void Function(Map<int, Offset> pointers)? onPointerCountChanged;
+  VoidCallback? onPinchEnd;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    startTrackingPointer(event.pointer, event.transform);
+    _pointers[event.pointer] = event.position;
+
+    if (_pointers.length >= 2 && !_isPinching) {
+      _isPinching = true;
+      resolve(GestureDisposition.accepted);
+      onPinchStart?.call(Map<int, Offset>.from(_pointers));
+    } else if (_isPinching) {
+      onPointerCountChanged?.call(Map<int, Offset>.from(_pointers));
+    }
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerMoveEvent) {
+      if (_pointers.containsKey(event.pointer)) {
+        _pointers[event.pointer] = event.position;
+        if (_isPinching) {
+          onPinchUpdate?.call(Map<int, Offset>.from(_pointers));
+        }
+      }
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _pointers.remove(event.pointer);
+      stopTrackingPointer(event.pointer);
+
+      if (_isPinching) {
+        if (_pointers.isEmpty) {
+          _isPinching = false;
+          onPinchEnd?.call();
+        } else {
+          onPointerCountChanged?.call(Map<int, Offset>.from(_pointers));
+        }
+      }
+    }
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _pointers.clear();
+    if (_isPinching) {
+      _isPinching = false;
+      onPinchEnd?.call();
+    }
+  }
+
+  @override
+  String get debugDescription => 'multi_touch_pinch_zoom';
+}
+

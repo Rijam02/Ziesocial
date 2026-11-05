@@ -100,6 +100,7 @@ class StoryViewerModel {
   final String name;
   final String avatar;
   final String viewDate;
+  final String viewTime;
 
   StoryViewerModel({
     required this.userId,
@@ -107,9 +108,13 @@ class StoryViewerModel {
     required this.name,
     required this.avatar,
     required this.viewDate,
+    this.viewTime = '',
   });
 
   factory StoryViewerModel.fromJson(Map<String, dynamic> json) {
+    final rawViewDate = json['view_date']?.toString() ?? '';
+    final rawViewTime = json['view_time']?.toString() ?? '';
+
     return StoryViewerModel(
       userId: json['user_id'] is int
           ? json['user_id'] as int
@@ -117,8 +122,31 @@ class StoryViewerModel {
       username: json['username']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       avatar: json['avatar']?.toString() ?? '',
-      viewDate: json['view_date']?.toString() ?? '',
+      viewDate: rawViewDate,
+      viewTime: rawViewTime.isNotEmpty
+          ? rawViewTime
+          : _formatFallbackViewTime(rawViewDate),
     );
+  }
+
+  static String _formatFallbackViewTime(String dateStr) {
+    if (dateStr.isEmpty) return '';
+    try {
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed == null) return dateStr;
+      final diff = DateTime.now().difference(parsed);
+      if (diff.inSeconds < 60 && !diff.isNegative) {
+        return 'Baru saja';
+      }
+      if (diff.inMinutes < 60 && !diff.isNegative) {
+        return '${diff.inMinutes} menit yang lalu';
+      }
+      final hh = parsed.hour.toString().padLeft(2, '0');
+      final mm = parsed.minute.toString().padLeft(2, '0');
+      return '$hh:$mm';
+    } catch (_) {
+      return dateStr;
+    }
   }
 }
 

@@ -56,6 +56,7 @@ class _HomeViewState extends State<HomeView> {
       context
           .read<ProfileViewModel>()
           .fetchNotifications(currentUserId, silent: silent);
+      context.read<HomeViewModel>().fetchStories(viewerId: currentUserId);
     }
   }
 
@@ -134,28 +135,19 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: _navigateToCreatePost,
-                    icon: const Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 22,
-                      color: AppColors.primaryText,
-                    ),
-                    tooltip: 'Unggah Postingan',
-                  ),
-                  IconButton(
                     onPressed: _openActivityView,
                     icon: Stack(
                       clipBehavior: Clip.none,
                       children: [
                         const Icon(
-                          Icons.notifications_none_rounded,
+                          Icons.favorite_border_rounded,
                           size: 23,
                           color: AppColors.primaryText,
                         ),
                         if (notificationsCount > 0)
                           Positioned(
-                            right: 0,
-                            top: 0,
+                            right: -1,
+                            top: -1,
                             child: Container(
                               width: 8,
                               height: 8,
@@ -171,7 +163,7 @@ class _HomeViewState extends State<HomeView> {
                           ),
                       ],
                     ),
-                    tooltip: 'Aktivitas',
+                    tooltip: 'Aktivitas & Notifikasi',
                   ),
                 ],
               ),

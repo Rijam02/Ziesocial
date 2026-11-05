@@ -325,10 +325,13 @@ class _CreatePostViewState extends State<CreatePostView> {
                         )
                       else
                         Container(
-                          height: 250,
+                          constraints: const BoxConstraints(minHeight: 245),
                           width: double.infinity,
                           color: AppColors.pureWhite,
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 24,
+                          ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -349,6 +352,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                               const Gap(14),
                               const Text(
                                 'Pilih Foto Postingan',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -358,28 +362,42 @@ class _CreatePostViewState extends State<CreatePostView> {
                               const Gap(4),
                               const Text(
                                 'Format JPG, PNG, atau WEBP (maksimal 5MB)',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   color: AppColors.secondaryText,
                                 ),
                               ),
                               const Gap(18),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 10,
+                                runSpacing: 10,
                                 children: [
                                   ElevatedButton.icon(
                                     onPressed: () =>
                                         _pickImage(ImageSource.gallery),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
                                     icon: const Icon(
                                       Icons.photo_library_outlined,
                                       size: 17,
                                     ),
                                     label: const Text('Pilih dari Galeri'),
                                   ),
-                                  const Gap(10),
                                   OutlinedButton.icon(
                                     onPressed: () =>
                                         _pickImage(ImageSource.camera),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                    ),
                                     icon: const Icon(
                                       Icons.camera_alt_outlined,
                                       size: 17,

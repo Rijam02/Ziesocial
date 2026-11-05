@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -434,32 +435,37 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
               ),
               const Gap(14),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cerita Baru',
-                        style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 19,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryText,
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cerita Baru',
+                          style: TextStyle(
+                            fontFamily: 'Georgia',
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryText,
+                          ),
                         ),
-                      ),
-                      Gap(2),
-                      Text(
-                        'Tayang selama 24 jam di beranda pengikut Anda',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.secondaryText,
+                        Gap(2),
+                        Text(
+                          'Tayang selama 24 jam di beranda pengikut Anda',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.secondaryText,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const Gap(8),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     icon: const Icon(
                       Icons.close_rounded,
                       size: 20,
@@ -642,23 +648,65 @@ class _StoryViewerDialog extends StatefulWidget {
   State<_StoryViewerDialog> createState() => _StoryViewerDialogState();
 }
 
-class _StoryViewerDialogState extends State<_StoryViewerDialog> {
+class _StoryViewerDialogState extends State<_StoryViewerDialog>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  int _currentTotalStories = 1;
+  late final AnimationController _progressController;
+  Timer? _realtimePoller;
 
   @override
   void initState() {
     super.initState();
+    _currentTotalStories = widget.group.stories.length;
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed && mounted) {
+          _nextStory(_currentTotalStories);
+        }
+      });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _markCurrentAsViewed();
+      _progressController.forward(from: 0.0);
     });
+
+    // Polling real-time untuk memperbarui daftar penonton saat story dibuka
+    if (widget.group.isOwn && widget.viewerId > 0) {
+      _realtimePoller = Timer.periodic(const Duration(seconds: 3), (_) {
+        if (mounted) {
+          context.read<HomeViewModel>().fetchStories(viewerId: widget.viewerId);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _realtimePoller?.cancel();
+    _progressController.dispose();
+    super.dispose();
+  }
+
+  List<StoryItemModel> _getCurrentStories() {
+    final latestGroup = context
+        .read<HomeViewModel>()
+        .getStoryGroupForUser(widget.group.userId);
+    if (latestGroup != null && latestGroup.stories.isNotEmpty) {
+      return latestGroup.stories;
+    }
+    return widget.group.stories;
   }
 
   void _markCurrentAsViewed() {
-    if (widget.group.stories.isEmpty) return;
-    final safeIdx = _currentIndex < widget.group.stories.length
-        ? _currentIndex
-        : widget.group.stories.length - 1;
-    final currentStory = widget.group.stories[safeIdx];
+    final stories = _getCurrentStories();
+    if (stories.isEmpty) return;
+    final safeIdx =
+        _currentIndex < stories.length ? _currentIndex : stories.length - 1;
+    final currentStory = stories[safeIdx];
     context.read<HomeViewModel>().markStoryViewed(
           viewerId: widget.viewerId,
           storyId: currentStory.id,
@@ -672,8 +720,11 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
         _currentIndex++;
       });
       _markCurrentAsViewed();
+      _progressController.forward(from: 0.0);
     } else {
-      Navigator.pop(context);
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -683,10 +734,15 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
         _currentIndex--;
       });
       _markCurrentAsViewed();
+      _progressController.forward(from: 0.0);
+    } else {
+      // Jika di story pertama, ulangi bar 10 detik dari awal
+      _progressController.forward(from: 0.0);
     }
   }
 
   Future<void> _confirmDeleteStory(StoryItemModel story) async {
+    _progressController.stop();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -718,7 +774,13 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true) {
+      if (mounted) {
+        _progressController.forward();
+      }
+      return;
+    }
+    if (!mounted) return;
 
     final homeVm = context.read<HomeViewModel>();
     final messenger = ScaffoldMessenger.of(context);
@@ -734,143 +796,40 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
       final updatedGroup = homeVm.getStoryGroupForUser(widget.group.userId);
       if (updatedGroup == null || updatedGroup.stories.isEmpty) {
         navigator.pop();
-      } else if (_currentIndex >= updatedGroup.stories.length) {
-        setState(() {
-          _currentIndex = updatedGroup.stories.length - 1;
-        });
+      } else {
+        if (_currentIndex >= updatedGroup.stories.length) {
+          setState(() {
+            _currentIndex = updatedGroup.stories.length - 1;
+          });
+        }
+        _progressController.forward(from: 0.0);
       }
       messenger.showSnackBar(
         const SnackBar(content: Text('Cerita berhasil dihapus.')),
       );
+    } else {
+      _progressController.forward();
     }
   }
 
-  void _showViewersSheet(StoryItemModel story) {
-    showModalBottomSheet(
+  Future<void> _showViewersSheet(StoryItemModel story) async {
+    _progressController.stop();
+    await showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.pureWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
       ),
-      builder: (ctx) {
-        final viewers = story.viewers;
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
-                width: 36,
-                height: 3.5,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.visibility_outlined,
-                      size: 19,
-                      color: AppColors.deepForest,
-                    ),
-                    const Gap(8),
-                    Text(
-                      'Riwayat Penonton (${viewers.length})',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              if (viewers.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 36),
-                  child: Text(
-                    'Belum ada pengguna lain yang melihat cerita ini.',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                )
-              else
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: viewers.length,
-                    separatorBuilder: (_, _) => const Divider(
-                      height: 1,
-                      indent: 68,
-                    ),
-                    itemBuilder: (context, i) {
-                      final v = viewers[i];
-                      final vAvatar = ApiConstants.getImageUrl(v.avatar);
-                      return ListTile(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          Navigator.pop(this.context);
-                          Navigator.push(
-                            this.context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfileView(
-                                userId: v.userId,
-                                username: v.username,
-                              ),
-                            ),
-                          );
-                        },
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.warmIvory,
-                          backgroundImage: vAvatar.isNotEmpty
-                              ? NetworkImage(vAvatar)
-                              : null,
-                          child: vAvatar.isEmpty
-                              ? Text(
-                                  v.username.isNotEmpty
-                                      ? v.username[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.deepForest,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        title: Text(
-                          v.username,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.5,
-                            color: AppColors.primaryText,
-                          ),
-                        ),
-                        subtitle: v.name.isNotEmpty
-                            ? Text(
-                                v.name,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.secondaryText,
-                                ),
-                              )
-                            : null,
-                      );
-                    },
-                  ),
-                ),
-              const Gap(12),
-            ],
-          ),
-        );
-      },
+      builder: (ctx) => _StoryViewersBottomSheet(
+        ownerUserId: widget.group.userId,
+        storyId: story.id,
+        initialStory: story,
+        parentContext: context,
+      ),
     );
+    if (mounted) {
+      _progressController.forward();
+    }
   }
 
   String _formatStoryTimestamp(String dateStr) {
@@ -901,6 +860,7 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
       return const SizedBox.shrink();
     }
 
+    _currentTotalStories = stories.length;
     final safeIndex =
         _currentIndex < stories.length ? _currentIndex : stories.length - 1;
     final story = stories[safeIndex];
@@ -925,6 +885,10 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
                     _nextStory(stories.length);
                   }
                 },
+                onLongPressStart: (_) => _progressController.stop(),
+                onLongPressEnd: (_) {
+                  if (mounted) _progressController.forward();
+                },
                 child: Center(
                   child: storyImageUrl.isNotEmpty
                       ? Image.network(
@@ -945,28 +909,49 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
               ),
             ),
 
-            // Top Progress Indicator + Author Header + Actions
+            // Top Animated 10-Second Progress Bar + Author Header + Actions
             Positioned(
               top: 12,
               left: 16,
               right: 16,
               child: Column(
                 children: [
-                  Row(
-                    children: List.generate(stories.length, (i) {
-                      return Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                          height: 2.5,
-                          decoration: BoxDecoration(
-                            color: i <= safeIndex
-                                ? AppColors.softBeige
-                                : Colors.white.withValues(alpha: 0.28),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
+                  AnimatedBuilder(
+                    animation: _progressController,
+                    builder: (context, _) {
+                      return Row(
+                        children: List.generate(stories.length, (i) {
+                          double segmentValue;
+                          if (i < safeIndex) {
+                            segmentValue = 1.0;
+                          } else if (i == safeIndex) {
+                            segmentValue = _progressController.value;
+                          } else {
+                            segmentValue = 0.0;
+                          }
+
+                          return Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 2.5),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: LinearProgressIndicator(
+                                  value: segmentValue,
+                                  minHeight: 3,
+                                  backgroundColor:
+                                      Colors.white.withValues(alpha: 0.28),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                    AppColors.softBeige,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
                       );
-                    }),
+                    },
                   ),
                   const Gap(14),
                   Row(
@@ -1143,6 +1128,227 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StoryViewersBottomSheet extends StatefulWidget {
+  final int ownerUserId;
+  final int storyId;
+  final StoryItemModel initialStory;
+  final BuildContext parentContext;
+
+  const _StoryViewersBottomSheet({
+    required this.ownerUserId,
+    required this.storyId,
+    required this.initialStory,
+    required this.parentContext,
+  });
+
+  @override
+  State<_StoryViewersBottomSheet> createState() =>
+      _StoryViewersBottomSheetState();
+}
+
+class _StoryViewersBottomSheetState extends State<_StoryViewersBottomSheet> {
+  Timer? _sheetPoller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Segera ambil data terbaru saat sheet dibuka dan ulangi tiap 2 detik secara real-time
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context
+            .read<HomeViewModel>()
+            .fetchStories(viewerId: widget.ownerUserId);
+      }
+    });
+    _sheetPoller = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted) {
+        context
+            .read<HomeViewModel>()
+            .fetchStories(viewerId: widget.ownerUserId);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sheetPoller?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final latestGroup = context
+        .watch<HomeViewModel>()
+        .getStoryGroupForUser(widget.ownerUserId);
+    StoryItemModel currentStory = widget.initialStory;
+    if (latestGroup != null) {
+      for (final s in latestGroup.stories) {
+        if (s.id == widget.storyId) {
+          currentStory = s;
+          break;
+        }
+      }
+    }
+    final viewers = currentStory.viewers;
+
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 8),
+            width: 36,
+            height: 3.5,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.visibility_outlined,
+                  size: 19,
+                  color: AppColors.deepForest,
+                ),
+                const Gap(8),
+                Text(
+                  'Riwayat Penonton (${viewers.length})',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warmIvory,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 6,
+                        color: AppColors.sageGreen,
+                      ),
+                      Gap(5),
+                      Text(
+                        'REAL-TIME',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: AppColors.deepForest,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          if (viewers.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 36),
+              child: Text(
+                'Belum ada pengguna lain yang melihat cerita ini.',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: viewers.length,
+                separatorBuilder: (_, _) => const Divider(
+                  height: 1,
+                  indent: 68,
+                ),
+                itemBuilder: (context, i) {
+                  final v = viewers[i];
+                  final vAvatar = ApiConstants.getImageUrl(v.avatar);
+                  return ListTile(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pop(widget.parentContext);
+                      Navigator.push(
+                        widget.parentContext,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileView(
+                            userId: v.userId,
+                            username: v.username,
+                          ),
+                        ),
+                      );
+                    },
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.warmIvory,
+                      backgroundImage:
+                          vAvatar.isNotEmpty ? NetworkImage(vAvatar) : null,
+                      child: vAvatar.isEmpty
+                          ? Text(
+                              v.username.isNotEmpty
+                                  ? v.username[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.deepForest,
+                              ),
+                            )
+                          : null,
+                    ),
+                    title: Text(
+                      v.username,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                        color: AppColors.primaryText,
+                      ),
+                    ),
+                    subtitle: v.name.isNotEmpty
+                        ? Text(
+                            v.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          )
+                        : null,
+                    trailing: v.viewTime.isNotEmpty
+                        ? Text(
+                            v.viewTime,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.secondaryText,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              ),
+            ),
+          const Gap(12),
+        ],
       ),
     );
   }

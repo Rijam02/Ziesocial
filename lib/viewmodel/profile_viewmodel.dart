@@ -22,12 +22,20 @@ class ProfileViewModel extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoadingNotifications = false;
 
+  Map<String, dynamic>? _myNoteData;
+  List<Map<String, dynamic>> _noteUsers = [];
+  bool _isLoadingNotes = false;
+
   ProfileModel? get profile => _lastProfile;
   ProfileModel? getProfile(int userId) => _profiles[userId];
   bool isUserLoading(int userId) => _loadingUserIds.contains(userId);
   String? getErrorMessage(int userId) => _errorMessages[userId];
   List<UserModel> get searchedUsers => _searchedUsers;
   bool get isSearching => _isSearching;
+
+  Map<String, dynamic>? get myNoteData => _myNoteData;
+  List<Map<String, dynamic>> get noteUsers => _noteUsers;
+  bool get isLoadingNotes => _isLoadingNotes;
 
   /// Mengembalikan daftar aktivitas yang belum kedaluwarsa (maksimal 7 hari)
   List<NotificationModel> get notifications =>
@@ -49,7 +57,55 @@ class ProfileViewModel extends ChangeNotifier {
     _isSearching = false;
     _notifications = [];
     _isLoadingNotifications = false;
+    _myNoteData = null;
+    _noteUsers = [];
+    _isLoadingNotes = false;
     notifyListeners();
+  }
+
+  Future<void> fetchNotesAndUsers(int viewerId, {bool silent = false}) async {
+    if (!silent) {
+      _isLoadingNotes = true;
+      notifyListeners();
+    }
+
+    try {
+      final response = await _apiClient.get(
+        '${ApiConstants.readNotes}?viewer_id=$viewerId',
+      );
+      if (response['my_note'] is Map) {
+        _myNoteData = Map<String, dynamic>.from(response['my_note'] as Map);
+      }
+      if (response['data'] is List) {
+        _noteUsers = (response['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+    } catch (_) {
+      // Keep existing notes if network fails
+    } finally {
+      _isLoadingNotes = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> saveUserNote({
+    required int userId,
+    required String noteText,
+  }) async {
+    try {
+      await _apiClient.post(
+        ApiConstants.saveNote,
+        body: {
+          'user_id': userId,
+          'note_text': noteText,
+        },
+      );
+      await fetchNotesAndUsers(userId, silent: true);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> fetchNotifications(int userId, {bool silent = false}) async {

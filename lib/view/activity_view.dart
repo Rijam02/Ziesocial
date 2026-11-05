@@ -156,7 +156,7 @@ class _ActivityViewState extends State<ActivityView> {
     return Scaffold(
       backgroundColor: AppColors.pureWhite,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(106),
+        preferredSize: const Size.fromHeight(112),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.pureWhite,
@@ -167,8 +167,10 @@ class _ActivityViewState extends State<ActivityView> {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -212,23 +214,26 @@ class _ActivityViewState extends State<ActivityView> {
                         ),
                     ],
                   ),
-                  const Gap(12),
-                  Row(
-                    children: [
-                      _buildFilterChip('Semua', 'all'),
-                      const Gap(8),
-                      _buildFilterChip('Pengikut', 'follow'),
-                      const Gap(8),
-                      _buildFilterChip('Suka & Komentar', 'interaction'),
-                      const Spacer(),
-                      const Text(
-                        '7 Hari Terakhir',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.secondaryText,
+                  const Gap(10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('Semua', 'all'),
+                        const Gap(8),
+                        _buildFilterChip('Pengikut', 'follow'),
+                        const Gap(8),
+                        _buildFilterChip('Suka & Komentar', 'interaction'),
+                        const Gap(14),
+                        const Text(
+                          '• 7 Hari Terakhir',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.secondaryText,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

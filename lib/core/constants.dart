@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL folder utama ZieSocial
-  static const String rootUrl = 'https://haziness-steep-jingling.ngrok-free.dev/ziesocial';
+  static const String rootUrl = 'http://localhost/ziesocial';
 
   // Base URL API
   static String get baseUrl => '$rootUrl/api';
@@ -45,6 +45,15 @@ class ApiConstants {
   // Highlights (Sorotan Profil)
   static String get updateHighlight => '$baseUrl/highlights/update.php';
   static String get deleteHighlight => '$baseUrl/highlights/delete.php';
+
+  // Notes & Pesan (Catatan 24 Jam & Daftar Akun Chat)
+  static String get readNotes => '$baseUrl/notes/read.php';
+  static String get saveNote => '$baseUrl/notes/save.php';
+
+  // Chat Messages (Pesan Teks, Kirim Foto, Balas & Hapus Chat)
+  static String get readMessages => '$baseUrl/messages/read.php';
+  static String get sendMessage => '$baseUrl/messages/send.php';
+  static String get deleteMessage => '$baseUrl/messages/delete.php';
 
   // Image URL
   static String getImageUrl(String? path) {

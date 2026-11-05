@@ -3,10 +3,10 @@ import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
-import 'package:ziesocial/view/activity_view.dart';
 import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/view/explore_view.dart';
 import 'package:ziesocial/view/home_view.dart';
+import 'package:ziesocial/view/messages_view.dart';
 import 'package:ziesocial/view/profile_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
@@ -52,7 +52,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
 
     if (index == 3 && currentUserId > 0) {
-      context.read<ProfileViewModel>().fetchNotifications(
+      context.read<ProfileViewModel>().fetchNotesAndUsers(
             currentUserId,
             silent: false,
           );
@@ -70,7 +70,6 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
     final profileVm = context.watch<ProfileViewModel>();
     final ownProfile = profileVm.getProfile(currentUserId);
-    final notificationsCount = profileVm.notifications.length;
     final avatarUrl = ApiConstants.getImageUrl(
       ownProfile?.user.avatar ?? currentUser?.avatar,
     );
@@ -79,7 +78,7 @@ class _MainNavigationViewState extends State<MainNavigationView> {
       const HomeView(),
       const ExploreView(),
       const SizedBox.shrink(),
-      const ActivityView(),
+      const MessagesView(),
       const ProfileView(),
     ];
 
@@ -138,10 +137,9 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                 ),
                 _buildNavItem(
                   index: 3,
-                  icon: Icons.notifications_none_rounded,
-                  activeIcon: Icons.notifications_rounded,
-                  label: 'Aktivitas',
-                  badgeCount: notificationsCount,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  activeIcon: Icons.chat_bubble_rounded,
+                  label: 'Pesan',
                 ),
                 _buildProfileNavItem(
                   index: 4,
