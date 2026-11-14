@@ -159,7 +159,7 @@ class _MessagesViewState extends State<MessagesView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Catatan Anda (Note)',
+                                  'Catatan Anda',
                                   style: TextStyle(
                                     fontFamily: 'Georgia',
                                     fontSize: 18.5,
@@ -169,7 +169,7 @@ class _MessagesViewState extends State<MessagesView> {
                                 ),
                                 Gap(2),
                                 Text(
-                                  'Bagikan pemikiran singkat selama 24 jam di menu Pesan',
+                                  'Bagikan Catatan anda untuk orang lain',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppColors.secondaryText,
@@ -567,7 +567,7 @@ class _MessagesViewState extends State<MessagesView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'CATATAN PENGGUNA (NOTES)',
+                            'CATATAN PENGGUNA',
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
@@ -598,7 +598,7 @@ class _MessagesViewState extends State<MessagesView> {
                     ),
                     const Gap(10),
                     SizedBox(
-                      height: 126,
+                      height: 134,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -662,7 +662,7 @@ class _MessagesViewState extends State<MessagesView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'PESAN LANGSUNG (CHAT)',
+                      'PESAN LANGSUNG',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -930,11 +930,11 @@ class _MessagesViewState extends State<MessagesView> {
     final bool showBubble = isOwn || noteText.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
-          width: 82,
+          width: 84,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -942,12 +942,12 @@ class _MessagesViewState extends State<MessagesView> {
               if (showBubble)
                 Container(
                   constraints: const BoxConstraints(
-                    maxWidth: 80,
-                    minHeight: 26,
+                    maxWidth: 82,
+                    minHeight: 24,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 5,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.pureWhite,
@@ -977,7 +977,7 @@ class _MessagesViewState extends State<MessagesView> {
                   ),
                 )
               else
-                const SizedBox(height: 26),
+                const SizedBox(height: 24),
 
               const Gap(4),
 
@@ -997,7 +997,7 @@ class _MessagesViewState extends State<MessagesView> {
                       ),
                     ),
                     child: CircleAvatar(
-                      radius: 25,
+                      radius: 32,
                       backgroundColor: AppColors.pureWhite,
                       backgroundImage:
                           avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
@@ -1006,7 +1006,7 @@ class _MessagesViewState extends State<MessagesView> {
                               fallbackLetter,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                                fontSize: 18,
                                 color: AppColors.deepForest,
                               ),
                             )
@@ -1018,18 +1018,18 @@ class _MessagesViewState extends State<MessagesView> {
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(2.5),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           color: AppColors.deepForest,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppColors.warmIvory,
-                            width: 1.8,
+                            width: 2,
                           ),
                         ),
                         child: const Icon(
                           Icons.add_rounded,
-                          size: 12,
+                          size: 13,
                           color: AppColors.pureWhite,
                         ),
                       ),
@@ -1043,7 +1043,7 @@ class _MessagesViewState extends State<MessagesView> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: isOwn ? FontWeight.w600 : FontWeight.w500,
                   color: AppColors.primaryText,
                 ),

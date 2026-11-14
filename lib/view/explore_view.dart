@@ -472,79 +472,76 @@ class _ExploreViewState extends State<ExploreView> {
       );
     }
 
-    return ColoredBox(
-      color: AppColors.border,
-      child: GridView.builder(
-        padding: const EdgeInsets.only(bottom: 24),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 1.5,
-          mainAxisSpacing: 1.5,
-          childAspectRatio: 0.78,
-        ),
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          final imageUrl = ApiConstants.getImageUrl(post.image);
-          final authorUsername = post.author?.username ?? '';
+    return GridView.builder(
+      padding: const EdgeInsets.only(bottom: 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 1.5,
+        mainAxisSpacing: 1.5,
+        childAspectRatio: 0.78,
+      ),
+      itemCount: posts.length,
+      itemBuilder: (context, index) {
+        final post = posts[index];
+        final imageUrl = ApiConstants.getImageUrl(post.image);
+        final authorUsername = post.author?.username ?? '';
 
-          return GestureDetector(
-            onTap: () => _openPostDetail(post),
-            child: Container(
-              color: AppColors.warmIvory,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageUrl.isNotEmpty)
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => const Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                    )
-                  else
-                    const Center(
+        return GestureDetector(
+          onTap: () => _openPostDetail(post),
+          child: Container(
+            color: AppColors.warmIvory,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (imageUrl.isNotEmpty)
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => const Center(
                       child: Icon(
-                        Icons.image_outlined,
+                        Icons.broken_image_outlined,
                         color: AppColors.secondaryText,
                       ),
                     ),
-                  if (authorUsername.isNotEmpty)
-                    Positioned(
-                      left: 6,
-                      bottom: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '@$authorUsername',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  )
+                else
+                  const Center(
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: AppColors.secondaryText,
+                    ),
+                  ),
+                if (authorUsername.isNotEmpty)
+                  Positioned(
+                    left: 6,
+                    bottom: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '@$authorUsername',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

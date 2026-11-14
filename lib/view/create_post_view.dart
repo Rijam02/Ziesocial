@@ -119,8 +119,8 @@ class _CreatePostViewState extends State<CreatePostView> {
         SnackBar(
           content: Text(
             _isHighlight
-                ? 'Postingan & Sorotan "$highlightTitle" berhasil diterbitkan.'
-                : 'Postingan baru berhasil diterbitkan.',
+                ? 'Postingan & Sorotan "$highlightTitle" berhasil diposting.'
+                : 'Postingan baru berhasil diposting.',
           ),
         ),
       );
@@ -172,7 +172,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                   ),
                   const Gap(4),
                   const Text(
-                    'Unggah Karya Baru',
+                    'Unggah Postingan',
                     style: TextStyle(
                       fontFamily: 'Georgia',
                       fontSize: 18.5,
@@ -203,7 +203,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                               ),
                             )
                           : const Text(
-                              'Terbitkan',
+                              'Posting',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -361,7 +361,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                               ),
                               const Gap(4),
                               const Text(
-                                'Format JPG, PNG, atau WEBP (maksimal 5MB)',
+                                'Ukuran foto maksimal 5MB',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 12.5,
@@ -387,7 +387,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                                       Icons.photo_library_outlined,
                                       size: 17,
                                     ),
-                                    label: const Text('Pilih dari Galeri'),
+                                    label: const Text('Galeri'),
                                   ),
                                   OutlinedButton.icon(
                                     onPressed: () =>
@@ -510,7 +510,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Jadikan Sorotan Profil',
+                                  'Jadikan Sorotan',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

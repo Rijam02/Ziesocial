@@ -90,7 +90,7 @@ class StoryTray extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'CERITA HARIAN',
+                  'STORY HARIAN',
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -101,7 +101,7 @@ class StoryTray extends StatelessWidget {
                 GestureDetector(
                   onTap: () => _openUploadStorySheet(context, currentUserId),
                   child: const Text(
-                    '+ Cerita Baru',
+                    '+ Story Baru',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
@@ -114,7 +114,7 @@ class StoryTray extends StatelessWidget {
           ),
           const Gap(10),
           SizedBox(
-            height: 90,
+            height: 102,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -123,7 +123,7 @@ class StoryTray extends StatelessWidget {
                 if (index == 0) {
                   // Item 0: Cerita Anda (foto profil + tombol +)
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: GestureDetector(
                       onTap: () {
                         if (myHasStory && myStory != null) {
@@ -160,7 +160,7 @@ class StoryTray extends StatelessWidget {
                                     color: AppColors.warmIvory,
                                   ),
                                   child: CircleAvatar(
-                                    radius: 27,
+                                    radius: 33,
                                     backgroundColor: AppColors.pureWhite,
                                     backgroundImage: avatarUrl.isNotEmpty
                                         ? NetworkImage(avatarUrl)
@@ -174,7 +174,7 @@ class StoryTray extends StatelessWidget {
                                                 : 'U',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w700,
-                                              fontSize: 17,
+                                              fontSize: 19,
                                               color: AppColors.deepForest,
                                             ),
                                           )
@@ -199,10 +199,10 @@ class StoryTray extends StatelessWidget {
                                         width: 2,
                                       ),
                                     ),
-                                    padding: const EdgeInsets.all(3),
+                                    padding: const EdgeInsets.all(3.5),
                                     child: const Icon(
                                       Icons.add_rounded,
-                                      size: 13,
+                                      size: 14,
                                       color: AppColors.pureWhite,
                                     ),
                                   ),
@@ -212,9 +212,9 @@ class StoryTray extends StatelessWidget {
                           ),
                           const Gap(6),
                           const Text(
-                            'Cerita Anda',
+                            'Story Anda',
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
                               color: AppColors.primaryText,
                             ),
@@ -232,7 +232,7 @@ class StoryTray extends StatelessWidget {
                 final bool showBorder = group.hasStory && group.hasUnseenStory;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
@@ -271,7 +271,7 @@ class StoryTray extends StatelessWidget {
                               color: AppColors.warmIvory,
                             ),
                             child: CircleAvatar(
-                              radius: 27,
+                              radius: 33,
                               backgroundColor: AppColors.pureWhite,
                               backgroundImage: groupAvatarUrl.isNotEmpty
                                   ? NetworkImage(groupAvatarUrl)
@@ -283,7 +283,7 @@ class StoryTray extends StatelessWidget {
                                           : 'U',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 17,
+                                        fontSize: 19,
                                         color: AppColors.deepForest,
                                       ),
                                     )
@@ -293,12 +293,12 @@ class StoryTray extends StatelessWidget {
                         ),
                         const Gap(6),
                         SizedBox(
-                          width: 68,
+                          width: 74,
                           child: Text(
                             group.username,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: showBorder
                                   ? FontWeight.w600
                                   : FontWeight.w400,
@@ -369,7 +369,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
   Future<void> _uploadStory() async {
     if (_selectedFile == null || _imageBytes == null) {
       setState(() {
-        _errorText = 'Pilih foto terlebih dahulu untuk dibagikan ke cerita.';
+        _errorText = 'Pilih foto terlebih dahulu untuk dibagikan ke story.';
       });
       return;
     }
@@ -398,12 +398,12 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
       navigator.pop();
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('Cerita berhasil diterbitkan (berlaku 24 jam).'),
+          content: Text('Story berhasil diposting'),
         ),
       );
     } else {
       setState(() {
-        _errorText = homeVm.errorMessage ?? 'Gagal mengunggah cerita.';
+        _errorText = homeVm.errorMessage ?? 'Gagal mengunggah story.';
       });
     }
   }
@@ -442,7 +442,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Cerita Baru',
+                          'Story Baru',
                           style: TextStyle(
                             fontFamily: 'Georgia',
                             fontSize: 19,
@@ -621,7 +621,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                             Text('Mengunggah cerita...'),
                           ],
                         )
-                      : const Text('Terbitkan Cerita'),
+                      : const Text('Posting Story'),
                 ),
               ),
               const Gap(18),
@@ -747,11 +747,11 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text(
-          'Hapus Cerita Ini?',
+          'Hapus Story Ini?',
           style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w600),
         ),
         content: const Text(
-          'Cerita ini akan dihapus secara permanen sebelum masa tayang 24 jam berakhir.',
+          'Story ini akan dihapus secara permanen sebelum masa tayang 24 jam berakhir.',
           style: TextStyle(fontSize: 13.5, color: AppColors.secondaryText),
         ),
         actions: [
@@ -1024,7 +1024,7 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog>
                             color: Colors.white,
                             size: 22,
                           ),
-                          tooltip: 'Tambah Cerita',
+                          tooltip: 'Tambah Story',
                         ),
                       if (latestGroup.isOwn)
                         IconButton(
@@ -1034,7 +1034,7 @@ class _StoryViewerDialogState extends State<_StoryViewerDialog>
                             color: Color(0xFFF29B9B),
                             size: 22,
                           ),
-                          tooltip: 'Hapus Cerita Ini',
+                          tooltip: 'Hapus Story Ini',
                         ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),

@@ -1014,53 +1014,50 @@ class _ProfileViewState extends State<ProfileView> {
                               ),
                             )
                           else
-                            ColoredBox(
-                              color: AppColors.border,
-                              child: GridView.builder(
-                                padding: const EdgeInsets.only(bottom: 28),
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 1.5,
-                                  mainAxisSpacing: 1.5,
-                                  childAspectRatio: 0.78,
-                                ),
-                                itemCount: profile.posts.length,
-                                itemBuilder: (context, index) {
-                                  final post = profile.posts[index];
-                                  final imageUrl =
-                                      ApiConstants.getImageUrl(post.image);
+                            GridView.builder(
+                              padding: const EdgeInsets.only(bottom: 28),
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 1.5,
+                                mainAxisSpacing: 1.5,
+                                childAspectRatio: 0.78,
+                              ),
+                              itemCount: profile.posts.length,
+                              itemBuilder: (context, index) {
+                                final post = profile.posts[index];
+                                final imageUrl =
+                                    ApiConstants.getImageUrl(post.image);
 
-                                  return GestureDetector(
-                                    onTap: () => _openPostDetail(post),
-                                    child: Container(
-                                      color: AppColors.warmIvory,
-                                      child: imageUrl.isNotEmpty
-                                          ? Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              errorBuilder: (ctx, err, stack) =>
-                                                  const Center(
-                                                child: Icon(
-                                                  Icons.broken_image_outlined,
-                                                  color: AppColors.secondaryText,
-                                                ),
-                                              ),
-                                            )
-                                          : const Center(
+                                return GestureDetector(
+                                  onTap: () => _openPostDetail(post),
+                                  child: Container(
+                                    color: AppColors.warmIvory,
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                            errorBuilder: (ctx, err, stack) =>
+                                                const Center(
                                               child: Icon(
-                                                Icons.image_outlined,
+                                                Icons.broken_image_outlined,
                                                 color: AppColors.secondaryText,
                                               ),
                                             ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                          )
+                                        : const Center(
+                                            child: Icon(
+                                              Icons.image_outlined,
+                                              color: AppColors.secondaryText,
+                                            ),
+                                          ),
+                                  ),
+                                );
+                              },
                             ),
                         ],
                       ),

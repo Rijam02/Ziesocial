@@ -1,5 +1,5 @@
 class ApiConstants {
-  // Base URL folder utama ZieSocial
+  // Base URL folder utama ZieSocial 
   static const String rootUrl = 'http://localhost/ziesocial';
 
   // Base URL API
