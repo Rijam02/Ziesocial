@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
 import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/model/post_model.dart';
+import 'package:ziesocial/view/messages_view.dart';
 import 'package:ziesocial/view/profile_view.dart';
 import 'package:ziesocial/viewmodel/home_viewmodel.dart';
 import 'package:ziesocial/viewmodel/login_viewmodel.dart';
@@ -94,6 +97,31 @@ class _PostCardState extends State<PostCard>
             .read<HomeViewModel>()
             .updateCommentCount(widget.post.id, newCount);
       },
+    );
+  }
+
+  void _openShareToFriendsSheet() {
+    final currentUser = context.read<LoginViewModel>().user;
+    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
+    if (currentUserId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan masuk terlebih dahulu.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.pureWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => _SharePostToFriendsBottomSheet(
+        post: widget.post,
+        currentUserId: currentUserId,
+        parentContext: context,
+      ),
     );
   }
 
@@ -280,7 +308,7 @@ class _PostCardState extends State<PostCard>
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
-              foregroundColor: AppColors.pureWhite,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Hapus'),
           ),
@@ -321,41 +349,52 @@ class _PostCardState extends State<PostCard>
         (author?.name.isNotEmpty ?? false) ? author!.name : displayUsername;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.pureWhite,
-        border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.surfaceContainer,
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.onSurface.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Editorial Header: Author Identity + Timestamp + Menu
+          // 1. Header Postingan (px-4 py-3.5)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 GestureDetector(
                   onTap: _openAuthorProfile,
                   child: Container(
-                    padding: EdgeInsets.all(hasUnseenStory ? 2.2 : 0),
+                    width: 40,
+                    height: 40,
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: hasUnseenStory ? AppColors.storyGradient : null,
-                      border: hasUnseenStory
+                      gradient:
+                          hasUnseenStory ? AppColors.storyGradient : null,
+                      color: hasUnseenStory
                           ? null
-                          : Border.all(color: AppColors.border, width: 1),
+                          : AppColors.surfaceContainerHighest,
                     ),
                     child: Container(
-                      padding: EdgeInsets.all(hasUnseenStory ? 1.5 : 0),
+                      padding: const EdgeInsets.all(1.5),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.pureWhite,
+                        color: AppColors.surfaceContainerLowest,
                       ),
                       child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppColors.warmIvory,
+                        backgroundColor: AppColors.surfaceContainerLow,
                         backgroundImage: avatarUrl.isNotEmpty
                             ? NetworkImage(avatarUrl)
                             : null,
@@ -363,9 +402,10 @@ class _PostCardState extends State<PostCard>
                             ? Text(
                                 displayUsername[0].toUpperCase(),
                                 style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.deepForest,
+                                  color: AppColors.primary,
                                 ),
                               )
                             : null,
@@ -380,216 +420,247 @@ class _PostCardState extends State<PostCard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayUsername,
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: AppColors.onSurface,
+                                  height: 1.2,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Gap(5),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                        const Gap(2),
                         Text(
-                          displayFullName,
+                          displayFullName != displayUsername
+                              ? displayFullName
+                              : 'ZieSocial Visual',
                           style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: AppColors.primaryText,
-                            letterSpacing: -0.2,
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.onSurfaceVariant,
+                            height: 1.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const Gap(1),
-                        Row(
-                          children: [
-                            Text(
-                              '@$displayUsername',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.secondaryText,
-                              ),
-                            ),
-                            if (widget.post.createDate.isNotEmpty) ...[
-                              const Text(
-                                '  •  ',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.secondaryText,
-                                ),
-                              ),
-                              Text(
-                                _formatTimeAgo(widget.post.createDate),
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.secondaryText,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
                       ],
                     ),
                   ),
                 ),
-                IconButton(
-                  onPressed: _showPostOptions,
-                  icon: const Icon(
-                    Icons.more_horiz_rounded,
-                    color: AppColors.secondaryText,
-                    size: 20,
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _showPostOptions,
+                    customBorder: const CircleBorder(),
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.more_horiz_rounded,
+                        color: AppColors.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Opsi Postingan',
                 ),
               ],
             ),
           ),
-          const Gap(12),
 
-          // 2. Framed Editorial Photograph (Mendukung Pinch-to-Zoom keluar kotak postingan)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: _ZoomablePostImage(
-              imageUrl: postImageUrl,
-              onDoubleTap: _triggerDoubleTapLike,
-              overlayBadge: _showHeartAnimation
-                  ? ScaleTransition(
-                      scale: _heartScaleAnim,
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.pureWhite.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
+          // 2. Foto Postingan (aspect-[4/5] bg-surface-container + Pinch-to-Zoom keluar kotak)
+          _ZoomablePostImage(
+            imageUrl: postImageUrl,
+            onDoubleTap: _triggerDoubleTapLike,
+            overlayBadge: _showHeartAnimation
+                ? ScaleTransition(
+                    scale: _heartScaleAnim,
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      size: 90,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: AppColors.secondaryContainer
+                              .withValues(alpha: 0.8),
+                          blurRadius: 30,
+                          offset: const Offset(0, 8),
                         ),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          size: 48,
-                          color: AppColors.error,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
+                      ],
+                    ),
+                  )
+                : null,
           ),
 
-          // 3. Editorial Caption
-          if (widget.post.caption.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-              child: Text(
-                widget.post.caption,
-                style: const TextStyle(
-                  color: AppColors.primaryText,
-                  fontSize: 14,
-                  height: 1.48,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-
-          const Gap(12),
-
-          // 4. Minimalist Editorial Interaction Bar
+          // 3. Footer Postingan (px-4 pt-3 pb-4)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Like Pill Button
-                InkWell(
-                  onTap: _toggleLike,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 6,
+                // Action Buttons Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        // Like Button + Count
+                        GestureDetector(
+                          onTap: _toggleLike,
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                widget.post.isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 26,
+                                color: widget.post.isLiked
+                                    ? AppColors.secondaryContainer
+                                    : AppColors.onSurface,
+                              ),
+                              const Gap(6),
+                              Text(
+                                '${widget.post.likeCount}',
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Gap(16),
+
+                        // Comment Button
+                        GestureDetector(
+                          onTap: _openComments,
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 24,
+                                color: AppColors.onSurface,
+                              ),
+                              if (widget.post.commentCount > 0) ...[
+                                const Gap(5),
+                                Text(
+                                  '${widget.post.commentCount}',
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const Gap(16),
+
+                        // Send / Share Button
+                        GestureDetector(
+                          onTap: _openShareToFriendsSheet,
+                          behavior: HitTestBehavior.opaque,
+                          child: const Icon(
+                            Icons.send_outlined,
+                            size: 24,
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: widget.post.isLiked
-                          ? AppColors.error.withValues(alpha: 0.1)
-                          : AppColors.warmIvory,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: widget.post.isLiked
-                            ? AppColors.error.withValues(alpha: 0.3)
-                            : AppColors.border,
-                        width: 1,
+
+                    if (widget.post.createDate.isNotEmpty)
+                      Text(
+                        _formatTimeAgo(widget.post.createDate),
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          widget.post.isLiked
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 17,
-                          color: widget.post.isLiked
-                              ? AppColors.error
-                              : AppColors.primaryText,
-                        ),
-                        const Gap(6),
-                        Text(
-                          '${widget.post.likeCount}',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: widget.post.isLiked
-                                ? AppColors.error
-                                : AppColors.primaryText,
-                          ),
-                        ),
-                      ],
-                    ),
+                  ],
+                ),
+
+                const Gap(10),
+
+                // Disukai oleh X orang
+                Text(
+                  'Disukai oleh ${widget.post.likeCount} orang',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurface,
                   ),
                 ),
-                const Gap(8),
 
-                // Comment Pill Button
-                InkWell(
-                  onTap: _openComments,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warmIvory,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.border, width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                // Username + Caption
+                if (widget.post.caption.isNotEmpty) ...[
+                  const Gap(4),
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        color: AppColors.onSurface,
+                        height: 1.5,
+                      ),
                       children: [
-                        const Icon(
-                          Icons.chat_bubble_outline_rounded,
-                          size: 16,
-                          color: AppColors.primaryText,
-                        ),
-                        const Gap(6),
-                        Text(
-                          widget.post.commentCount > 0
-                              ? '${widget.post.commentCount} Komentar'
-                              : 'Komentar',
+                        TextSpan(
+                          text: '$displayUsername  ',
                           style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.primaryText,
+                            fontWeight: FontWeight.w700,
                           ),
+                        ),
+                        TextSpan(
+                          text: widget.post.caption,
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
 
-                const Spacer(),
-
-                // Subtle Discussion Link
-                if (widget.post.commentCount > 0)
+                // Lihat semua komentar
+                if (widget.post.commentCount > 0) ...[
+                  const Gap(8),
                   GestureDetector(
                     onTap: _openComments,
-                    child: const Text(
-                      'Lihat diskusi →',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.sageGreen,
+                    child: Text(
+                      'Lihat semua ${widget.post.commentCount} komentar',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.onSurfaceVariant,
                       ),
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -857,10 +928,13 @@ class _ZoomablePostImageState extends State<_ZoomablePostImage>
         onDoubleTap: widget.onDoubleTap,
         child: Container(
           key: _boxKey,
-          decoration: BoxDecoration(
+          width: double.infinity,
+          decoration: const BoxDecoration(
             color: AppColors.warmIvory,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 0.7),
+              bottom: BorderSide(color: AppColors.border, width: 0.7),
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -871,8 +945,8 @@ class _ZoomablePostImageState extends State<_ZoomablePostImage>
                   opacity: _isZooming ? 0.0 : 1.0,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      minHeight: 220,
-                      maxHeight: 460,
+                      minHeight: 280,
+                      maxHeight: 520,
                     ),
                     child: Image.network(
                       widget.imageUrl,
@@ -1005,4 +1079,550 @@ class _MultiTouchPinchRecognizer extends OneSequenceGestureRecognizer {
   @override
   String get debugDescription => 'multi_touch_pinch_zoom';
 }
+
+/// Bottom Sheet untuk mengirim/membagikan postingan ke teman yang mengikuti (followers/following)
+/// langsung ke ruang chat masing-masing teman.
+class _SharePostToFriendsBottomSheet extends StatefulWidget {
+  final PostModel post;
+  final int currentUserId;
+  final BuildContext parentContext;
+
+  const _SharePostToFriendsBottomSheet({
+    required this.post,
+    required this.currentUserId,
+    required this.parentContext,
+  });
+
+  @override
+  State<_SharePostToFriendsBottomSheet> createState() =>
+      _SharePostToFriendsBottomSheetState();
+}
+
+class _SharePostToFriendsBottomSheetState
+    extends State<_SharePostToFriendsBottomSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _noteController = TextEditingController();
+
+  bool _isLoading = true;
+  String _searchQuery = '';
+  List<Map<String, dynamic>> _friends = [];
+  final Set<int> _sendingUserIds = {};
+  final Set<int> _sentUserIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFollowerFriends();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFollowerFriends() async {
+    setState(() => _isLoading = true);
+
+    final Map<int, Map<String, dynamic>> combined = {};
+
+    try {
+      // 1. Ambil daftar teman yang mengikuti akun kita (followers)
+      final followersUrl =
+          '${ApiConstants.followList}?user_id=${widget.currentUserId}&viewer_id=${widget.currentUserId}&type=followers';
+      final followersRes = await http.get(Uri.parse(followersUrl));
+      if (followersRes.statusCode == 200) {
+        final decoded = jsonDecode(followersRes.body);
+        final List<dynamic> list = decoded['data'] ?? [];
+        for (final item in list) {
+          final uid = int.tryParse(item['id']?.toString() ?? '0') ?? 0;
+          if (uid > 0 && uid != widget.currentUserId) {
+            final bool isMutual = item['is_following'] == true;
+            combined[uid] = {
+              'user_id': uid,
+              'username': item['username']?.toString() ?? '',
+              'name': item['name']?.toString() ?? '',
+              'avatar': item['avatar']?.toString() ?? '',
+              'bio': item['bio']?.toString() ?? '',
+              'relation_label':
+                  isMutual ? 'Saling Mengikuti' : 'Mengikuti Anda',
+            };
+          }
+        }
+      }
+
+      // 2. Ambil juga daftar teman yang kita ikuti (following) jika belum masuk
+      final followingUrl =
+          '${ApiConstants.followList}?user_id=${widget.currentUserId}&viewer_id=${widget.currentUserId}&type=following';
+      final followingRes = await http.get(Uri.parse(followingUrl));
+      if (followingRes.statusCode == 200) {
+        final decoded = jsonDecode(followingRes.body);
+        final List<dynamic> list = decoded['data'] ?? [];
+        for (final item in list) {
+          final uid = int.tryParse(item['id']?.toString() ?? '0') ?? 0;
+          if (uid > 0 &&
+              uid != widget.currentUserId &&
+              !combined.containsKey(uid)) {
+            combined[uid] = {
+              'user_id': uid,
+              'username': item['username']?.toString() ?? '',
+              'name': item['name']?.toString() ?? '',
+              'avatar': item['avatar']?.toString() ?? '',
+              'bio': item['bio']?.toString() ?? '',
+              'relation_label': 'Teman yang Diikuti',
+            };
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _friends = combined.values.toList();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _sendPostToFriend(Map<String, dynamic> friend) async {
+    final targetUserId =
+        int.tryParse(friend['user_id']?.toString() ?? '0') ?? 0;
+    if (targetUserId <= 0 || _sendingUserIds.contains(targetUserId)) return;
+
+    setState(() {
+      _sendingUserIds.add(targetUserId);
+    });
+
+    final authorUsername = widget.post.author?.username ?? 'pengguna';
+    final authorAvatar = widget.post.author?.avatar ?? '';
+    final extraNote = _noteController.text.trim();
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConstants.sendMessage),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'sender_id': widget.currentUserId,
+          'receiver_id': targetUserId,
+          'message_text': '',
+          'shared_image_path': widget.post.image,
+          'shared_author_username': authorUsername,
+          'shared_author_avatar': authorAvatar,
+        }),
+      );
+
+      // Jika user juga mengetik pesan tambahan saat kirim postingan, kirim sebagai pesan teks terpisah tanpa emoji
+      if (extraNote.isNotEmpty &&
+          (response.statusCode == 201 || response.statusCode == 200)) {
+        await http.post(
+          Uri.parse(ApiConstants.sendMessage),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'sender_id': widget.currentUserId,
+            'receiver_id': targetUserId,
+            'message_text': extraNote,
+          }),
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _sendingUserIds.remove(targetUserId);
+          if (response.statusCode == 201 || response.statusCode == 200) {
+            _sentUserIds.add(targetUserId);
+          }
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _sendingUserIds.remove(targetUserId);
+        });
+      }
+    }
+  }
+
+  void _openFriendChat(Map<String, dynamic> friend) {
+    Navigator.pop(context);
+    Navigator.push(
+      widget.parentContext,
+      MaterialPageRoute(
+        builder: (_) => ChatRoomView(partnerUser: friend),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final postImageUrl = ApiConstants.getImageUrl(widget.post.image);
+    final authorUsername = widget.post.author?.username ?? 'pengguna';
+
+    final filtered = _searchQuery.isEmpty
+        ? _friends
+        : _friends.where((f) {
+            final q = _searchQuery.toLowerCase();
+            final uname = (f['username']?.toString() ?? '').toLowerCase();
+            final name = (f['name']?.toString() ?? '').toLowerCase();
+            return uname.contains(q) || name.contains(q);
+          }).toList();
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.78,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  width: 36,
+                  height: 3.5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Kirim Postingan ke Teman',
+                            style: TextStyle(
+                              fontFamily: 'Georgia',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
+                          Gap(2),
+                          Text(
+                            'Bagikan postingan ini ke ruang chat teman yang mengikuti Anda',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 14),
+
+              // Pratinjau Postingan + Input Pesan Tambahan
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.warmIvory,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: postImageUrl.isNotEmpty
+                            ? Image.network(
+                                postImageUrl,
+                                width: 46,
+                                height: 46,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                width: 46,
+                                height: 46,
+                                color: AppColors.mistGray,
+                                child: const Icon(
+                                  Icons.image_outlined,
+                                  size: 20,
+                                  color: AppColors.secondaryText,
+                                ),
+                              ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: TextField(
+                          controller: _noteController,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText:
+                                'Tulis pesan untuk postingan @$authorUsername...',
+                            hintStyle: const TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.secondaryText,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Gap(10),
+
+              // Kolom Pencarian Teman
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: SizedBox(
+                  height: 38,
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) {
+                      setState(() => _searchQuery = val.trim());
+                    },
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Cari teman yang mengikuti...',
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: AppColors.secondaryText,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.warmIvory,
+                      contentPadding: EdgeInsets.zero,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide:
+                            const BorderSide(color: AppColors.sageGreen),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Gap(10),
+
+              // Daftar Teman yang Mengikuti
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 36),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.sageGreen,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              else if (filtered.isEmpty)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.people_outline_rounded,
+                          size: 32,
+                          color: AppColors.secondaryText,
+                        ),
+                        const Gap(8),
+                        Text(
+                          _friends.isEmpty
+                              ? 'Belum ada teman yang mengikuti akun Anda.'
+                              : 'Teman tidak ditemukan.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const Divider(
+                      height: 1,
+                      indent: 56,
+                      color: AppColors.border,
+                    ),
+                    itemBuilder: (context, index) {
+                      final friend = filtered[index];
+                      final uid = int.tryParse(
+                            friend['user_id']?.toString() ?? '0',
+                          ) ??
+                          0;
+                      final uname =
+                          friend['username']?.toString() ?? 'pengguna';
+                      final fullName = friend['name']?.toString() ?? '';
+                      final relation =
+                          friend['relation_label']?.toString() ?? 'Pengikut';
+                      final fAvatar = ApiConstants.getImageUrl(
+                        friend['avatar']?.toString(),
+                      );
+
+                      final isSending = _sendingUserIds.contains(uid);
+                      final isSent = _sentUserIds.contains(uid);
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 21,
+                              backgroundColor: AppColors.warmIvory,
+                              backgroundImage: fAvatar.isNotEmpty
+                                  ? NetworkImage(fAvatar)
+                                  : null,
+                              child: fAvatar.isEmpty
+                                  ? Text(
+                                      uname.isNotEmpty
+                                          ? uname[0].toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.deepForest,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    fullName.isNotEmpty ? fullName : uname,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primaryText,
+                                    ),
+                                  ),
+                                  const Gap(2),
+                                  Text(
+                                    '@$uname • $relation',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.secondaryText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Gap(8),
+                            if (isSent)
+                              SizedBox(
+                                height: 32,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _openFriendChat(friend),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    side: const BorderSide(
+                                      color: AppColors.sageGreen,
+                                    ),
+                                    foregroundColor: AppColors.deepForest,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.check_rounded,
+                                    size: 15,
+                                    color: AppColors.sageGreen,
+                                  ),
+                                  label: const Text(
+                                    'Buka Chat',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              SizedBox(
+                                height: 32,
+                                child: ElevatedButton(
+                                  onPressed: isSending
+                                      ? null
+                                      : () => _sendPostToFriend(friend),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.deepForest,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                  ),
+                                  child: isSending
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Kirim',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const Gap(12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 

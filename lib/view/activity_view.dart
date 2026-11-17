@@ -393,7 +393,7 @@ class _ActivityViewState extends State<ActivityView> {
                                           child: Icon(
                                             _buildTypeBadgeIcon(item.type),
                                             size: 9,
-                                            color: AppColors.pureWhite,
+                                            color: Colors.white,
                                           ),
                                         ),
                                       ),
@@ -474,8 +474,7 @@ class _ActivityViewState extends State<ActivityView> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
                                                   AppColors.deepForest,
-                                              foregroundColor:
-                                                  AppColors.pureWhite,
+                                              foregroundColor: Colors.white,
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                 horizontal: 12,
@@ -545,7 +544,7 @@ class _ActivityViewState extends State<ActivityView> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color: isSelected ? AppColors.pureWhite : AppColors.primaryText,
+            color: isSelected ? Colors.white : AppColors.primaryText,
           ),
         ),
       ),

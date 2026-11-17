@@ -166,7 +166,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                       onPressed: _isSaving ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepForest,
-                        foregroundColor: AppColors.pureWhite,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       child: _isSaving
@@ -175,7 +175,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                               height: 15,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppColors.pureWhite,
+                                color: Colors.white,
                               ),
                             )
                           : const Text(
@@ -303,7 +303,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                                   child: const Icon(
                                     Icons.camera_alt_outlined,
                                     size: 14,
-                                    color: AppColors.pureWhite,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),

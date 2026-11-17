@@ -1,8 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:ziesocial/core/app_theme.dart';
-import 'package:ziesocial/core/constants.dart';
 import 'package:ziesocial/view/create_post_view.dart';
 import 'package:ziesocial/view/explore_view.dart';
 import 'package:ziesocial/view/home_view.dart';
@@ -66,14 +66,6 @@ class _MainNavigationViewState extends State<MainNavigationView> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<LoginViewModel>().user;
-    final currentUserId = int.tryParse(currentUser?.id ?? '0') ?? 0;
-    final profileVm = context.watch<ProfileViewModel>();
-    final ownProfile = profileVm.getProfile(currentUserId);
-    final avatarUrl = ApiConstants.getImageUrl(
-      ownProfile?.user.avatar ?? currentUser?.avatar,
-    );
-
     final List<Widget> pages = [
       const HomeView(),
       const ExploreView(),
@@ -83,72 +75,99 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.pureWhite,
+      backgroundColor: AppColors.surface,
       body: IndexedStack(
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.pureWhite,
-          border: Border(
-            top: BorderSide(color: AppColors.border, width: 1),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 62,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.grid_view_outlined,
-                  activeIcon: Icons.grid_view_rounded,
-                  label: 'Beranda',
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.90),
+              border: Border(
+                top: BorderSide(
+                  color:
+                      AppColors.surfaceContainerHighest.withValues(alpha: 0.60),
+                  width: 1,
                 ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.search_rounded,
-                  activeIcon: Icons.search_rounded,
-                  label: 'Eksplor',
-                ),
-                // Center Compose Button
-                GestureDetector(
-                  onTap: () => _onTabSelected(2),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Container(
-                      width: 42,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: AppColors.deepForest,
-                        borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 64,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // 1. Beranda (home)
+                      _buildNavItem(
+                        index: 0,
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: 'home',
                       ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: AppColors.pureWhite,
-                        size: 22,
+                      // 2. Eksplor (explore)
+                      _buildNavItem(
+                        index: 1,
+                        icon: Icons.explore_outlined,
+                        activeIcon: Icons.explore_rounded,
+                        label: 'explore',
                       ),
-                    ),
+                      // 3. Tombol Tambah (+) / Post Squircle Center Button
+                      GestureDetector(
+                        onTap: () => _onTabSelected(2),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryContainer,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                        ),
+                      ),
+                      // 4. Pesan (forum)
+                      _buildNavItem(
+                        index: 3,
+                        icon: Icons.forum_outlined,
+                        activeIcon: Icons.forum_rounded,
+                        label: 'forum',
+                      ),
+                      // 5. Profil
+                      _buildNavItem(
+                        index: 4,
+                        icon: Icons.person_outline_rounded,
+                        activeIcon: Icons.person_rounded,
+                        label: 'Profil',
+                      ),
+                    ],
                   ),
                 ),
-                _buildNavItem(
-                  index: 3,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  activeIcon: Icons.chat_bubble_rounded,
-                  label: 'Pesan',
-                ),
-                _buildProfileNavItem(
-                  index: 4,
-                  avatarUrl: avatarUrl,
-                  fallbackLetter: currentUser?.username.isNotEmpty == true
-                      ? currentUser!.username[0].toUpperCase()
-                      : 'U',
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -161,130 +180,42 @@ class _MainNavigationViewState extends State<MainNavigationView> {
     required IconData icon,
     required IconData activeIcon,
     required String label,
-    int badgeCount = 0,
   }) {
     final bool isSelected = _currentIndex == index;
     return Expanded(
       child: InkWell(
         onTap: () => _onTabSelected(index),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 22,
-                  color: isSelected
-                      ? AppColors.deepForest
-                      : AppColors.secondaryText,
-                ),
-                if (badgeCount > 0)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: AppColors.sageGreen,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.pureWhite,
-                          width: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 24,
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.onSurfaceVariant,
             ),
-            const Gap(4),
+            const Gap(2),
             Text(
               label,
               style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? AppColors.deepForest
-                    : AppColors.secondaryText,
-                letterSpacing: 0.1,
+                    ? AppColors.primary
+                    : AppColors.onSurfaceVariant,
               ),
             ),
             const Gap(2),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: isSelected ? 12 : 0,
+              width: isSelected ? 14 : 0,
               height: 2,
               decoration: BoxDecoration(
-                color: AppColors.sageGreen,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileNavItem({
-    required int index,
-    required String avatarUrl,
-    required String fallbackLetter,
-  }) {
-    final bool isSelected = _currentIndex == index;
-    return Expanded(
-      child: InkWell(
-        onTap: () => _onTabSelected(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(1.5),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.sageGreen : AppColors.border,
-                  width: 1.5,
-                ),
-              ),
-              child: CircleAvatar(
-                radius: 10,
-                backgroundColor: AppColors.warmIvory,
-                backgroundImage:
-                    avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl.isEmpty
-                    ? Text(
-                        fallbackLetter,
-                        style: const TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryText,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-            const Gap(4),
-            Text(
-              'Profil',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected
-                    ? AppColors.deepForest
-                    : AppColors.secondaryText,
-                letterSpacing: 0.1,
-              ),
-            ),
-            const Gap(2),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: isSelected ? 12 : 0,
-              height: 2,
-              decoration: BoxDecoration(
-                color: AppColors.sageGreen,
-                borderRadius: BorderRadius.circular(1),
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ],

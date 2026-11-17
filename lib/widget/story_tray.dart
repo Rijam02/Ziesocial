@@ -74,56 +74,45 @@ class StoryTray extends StatelessWidget {
     final otherGroups = homeVm.storyGroups;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.warmIvory,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 1),
+          bottom: BorderSide(
+            color: AppColors.surfaceContainerHighest.withValues(alpha: 0.40),
+            width: 1,
+          ),
         ),
       ),
-      padding: const EdgeInsets.only(top: 10, bottom: 12),
+      padding: const EdgeInsets.only(top: 14, bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'STORY HARIAN',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.4,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _openUploadStorySheet(context, currentUserId),
-                  child: const Text(
-                    '+ Story Baru',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.deepForest,
-                    ),
-                  ),
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'STORY HARIAN',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.9,
+                color: AppColors.outline,
+              ),
             ),
           ),
           const Gap(10),
           SizedBox(
-            height: 102,
+            height: 92,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: otherGroups.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  // Item 0: Cerita Anda (foto profil + tombol +)
+                  // Item 0: Story Anda
+                  final bool showMyRing = myHasStory && myHasUnseen;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
                     child: GestureDetector(
                       onTap: () {
                         if (myHasStory && myStory != null) {
@@ -139,87 +128,102 @@ class StoryTray extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Stack(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(
-                                  (myHasStory && myHasUnseen) ? 2.5 : 0,
-                                ),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: (myHasStory && myHasUnseen)
-                                      ? AppColors.storyGradient
-                                      : null,
-                                ),
-                                child: Container(
-                                  padding: EdgeInsets.all(
-                                    (myHasStory && myHasUnseen) ? 2 : 0,
-                                  ),
-                                  decoration: const BoxDecoration(
+                          SizedBox(
+                            width: 62,
+                            height: 62,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: showMyRing ? 62 : 58,
+                                  height: showMyRing ? 62 : 58,
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: AppColors.warmIvory,
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 33,
-                                    backgroundColor: AppColors.pureWhite,
-                                    backgroundImage: avatarUrl.isNotEmpty
-                                        ? NetworkImage(avatarUrl)
+                                    gradient: showMyRing
+                                        ? AppColors.storyGradient
                                         : null,
-                                    child: avatarUrl.isEmpty
-                                        ? Text(
-                                            currentUser?.username.isNotEmpty ==
-                                                    true
-                                                ? currentUser!.username[0]
-                                                    .toUpperCase()
-                                                : 'U',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 19,
-                                              color: AppColors.deepForest,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () => _openUploadStorySheet(
-                                    context,
-                                    currentUserId,
+                                    color: showMyRing
+                                        ? null
+                                        : AppColors.surfaceContainerHighest,
                                   ),
                                   child: Container(
-                                    decoration: BoxDecoration(
-                                      color: AppColors.deepForest,
+                                    padding: EdgeInsets.all(showMyRing ? 2 : 0),
+                                    decoration: const BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.warmIvory,
-                                        width: 2,
-                                      ),
+                                      color: AppColors.surfaceContainerLowest,
                                     ),
-                                    padding: const EdgeInsets.all(3.5),
-                                    child: const Icon(
-                                      Icons.add_rounded,
-                                      size: 14,
-                                      color: AppColors.pureWhite,
+                                    child: CircleAvatar(
+                                      backgroundColor:
+                                          AppColors.surfaceContainerLow,
+                                      backgroundImage: avatarUrl.isNotEmpty
+                                          ? NetworkImage(avatarUrl)
+                                          : null,
+                                      child: avatarUrl.isEmpty
+                                          ? Text(
+                                              currentUser?.username
+                                                          .isNotEmpty ==
+                                                      true
+                                                  ? currentUser!.username[0]
+                                                      .toUpperCase()
+                                                  : 'U',
+                                              style: const TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 18,
+                                                color: AppColors.primary,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: () => _openUploadStorySheet(
+                                      context,
+                                      currentUserId,
+                                    ),
+                                    child: Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryContainer,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColors.surface,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.add_rounded,
+                                        size: 13,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const Gap(6),
-                          const Text(
-                            'Story Anda',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.primaryText,
+                          const SizedBox(
+                            width: 64,
+                            child: Text(
+                              'Story Anda',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -232,9 +236,8 @@ class StoryTray extends StatelessWidget {
                 final bool showBorder = group.hasStory && group.hasUnseenStory;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: GestureDetector(
                     onTap: () {
                       if (group.hasStory) {
                         _openStoryViewer(
@@ -258,21 +261,25 @@ class StoryTray extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: EdgeInsets.all(showBorder ? 2.5 : 0),
+                          width: 62,
+                          height: 62,
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient:
                                 showBorder ? AppColors.storyGradient : null,
+                            color: showBorder
+                                ? null
+                                : AppColors.surfaceContainerHighest,
                           ),
                           child: Container(
-                            padding: EdgeInsets.all(showBorder ? 2 : 0),
+                            padding: const EdgeInsets.all(2),
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.warmIvory,
+                              color: AppColors.surfaceContainerLowest,
                             ),
                             child: CircleAvatar(
-                              radius: 33,
-                              backgroundColor: AppColors.pureWhite,
+                              backgroundColor: AppColors.surfaceContainerLow,
                               backgroundImage: groupAvatarUrl.isNotEmpty
                                   ? NetworkImage(groupAvatarUrl)
                                   : null,
@@ -282,9 +289,10 @@ class StoryTray extends StatelessWidget {
                                           ? group.username[0].toUpperCase()
                                           : 'U',
                                       style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 19,
-                                        color: AppColors.deepForest,
+                                        fontSize: 18,
+                                        color: AppColors.primary,
                                       ),
                                     )
                                   : null,
@@ -293,18 +301,19 @@ class StoryTray extends StatelessWidget {
                         ),
                         const Gap(6),
                         SizedBox(
-                          width: 74,
+                          width: 64,
                           child: Text(
                             group.username,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 12,
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 11,
                               fontWeight: showBorder
                                   ? FontWeight.w600
-                                  : FontWeight.w400,
+                                  : FontWeight.w500,
                               color: showBorder
-                                  ? AppColors.primaryText
-                                  : AppColors.secondaryText,
+                                  ? AppColors.onSurface
+                                  : AppColors.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -613,7 +622,7 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                               width: 17,
                               height: 17,
                               child: CircularProgressIndicator(
-                                color: AppColors.pureWhite,
+                                color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             ),

@@ -187,7 +187,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                       onPressed: isLoading ? null : _handleShare,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepForest,
-                        foregroundColor: AppColors.pureWhite,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -199,7 +199,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppColors.pureWhite,
+                                color: Colors.white,
                               ),
                             )
                           : const Text(
@@ -531,7 +531,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                           Switch(
                             value: _isHighlight,
                             activeTrackColor: AppColors.sageGreen,
-                            activeThumbColor: AppColors.pureWhite,
+                            activeThumbColor: Colors.white,
                             onChanged: (val) {
                               setState(() {
                                 _isHighlight = val;

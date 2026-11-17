@@ -71,7 +71,7 @@ class _AccountSettingsViewState extends State<AccountSettingsView> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.deepForest,
-              foregroundColor: AppColors.pureWhite,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Keluar'),
           ),
@@ -259,7 +259,7 @@ class _AccountSettingsViewState extends State<AccountSettingsView> {
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error,
-                    foregroundColor: AppColors.pureWhite,
+                    foregroundColor: Colors.white,
                   ),
                   child: isDeleting
                       ? const SizedBox(
@@ -267,7 +267,7 @@ class _AccountSettingsViewState extends State<AccountSettingsView> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.pureWhite,
+                            color: Colors.white,
                           ),
                         )
                       : const Text('Hapus Akun Permanen'),

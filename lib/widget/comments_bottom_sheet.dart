@@ -432,7 +432,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepForest,
-                        foregroundColor: AppColors.pureWhite,
+                        foregroundColor: Colors.white,
                         disabledBackgroundColor: AppColors.mistGray,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
@@ -445,7 +445,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                               height: 15,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: AppColors.pureWhite,
+                                color: Colors.white,
                               ),
                             )
                           : const Text(

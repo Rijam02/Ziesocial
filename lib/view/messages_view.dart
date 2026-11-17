@@ -344,7 +344,7 @@ class _MessagesViewState extends State<MessagesView> {
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: AppColors.pureWhite,
+                                        color: Colors.white,
                                       ),
                                     )
                                   : const Text('Bagikan Catatan'),
@@ -1030,7 +1030,7 @@ class _MessagesViewState extends State<MessagesView> {
                         child: const Icon(
                           Icons.add_rounded,
                           size: 13,
-                          color: AppColors.pureWhite,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -1342,7 +1342,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
-              foregroundColor: AppColors.pureWhite,
+              foregroundColor: Colors.white,
             ),
             child: const Text('Hapus'),
           ),
@@ -1427,7 +1427,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                         child: Text(
                           msgText.isNotEmpty
                               ? '"$msgText"'
-                              : (hasImage ? '📷 Foto Lampiran' : 'Pesan Chat'),
+                              : (hasImage ? 'Foto / Postingan' : 'Pesan Chat'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1941,7 +1941,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                                       .isNotEmpty ??
                                   false)
                               ? _replyingToMessage!['message_text'].toString()
-                              : '📷 Foto',
+                              : 'Foto / Postingan',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -2054,7 +2054,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                       child: const Icon(
                         Icons.camera_alt_outlined,
                         size: 18,
-                        color: AppColors.pureWhite,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -2145,15 +2145,35 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     required String partnerAvatarUrl,
     required String partnerUsername,
   }) {
-    final text = msg['message_text']?.toString().trim() ?? '';
+    final rawText = msg['message_text']?.toString().trim() ?? '';
+    // Pastikan tidak ada karakter '????' atau teks 'Postingan @...' yang ikut tampil
+    final text = rawText
+        .replaceAll(RegExp(r'\?{3,}\s*'), '')
+        .replaceAll(RegExp(r'Postingan\s+@[^:]+:\s*".*"', caseSensitive: false), '')
+        .replaceAll(RegExp(r'Membagikan postingan\s+@\S+', caseSensitive: false), '')
+        .trim();
+
     final rawImage = msg['image']?.toString().trim() ?? '';
     final imageUrl =
         rawImage.isNotEmpty ? ApiConstants.getImageUrl(rawImage) : '';
-    final timeLabel = msg['time_label']?.toString().trim() ?? '';
+
+    final bool isSharedPost = (msg['is_shared_post'] == true) ||
+        (rawImage.isNotEmpty && !rawImage.startsWith('uploads/messages/'));
+    final String sharedAuthorUsername =
+        (msg['shared_author_username']?.toString().trim().isNotEmpty ?? false)
+            ? msg['shared_author_username'].toString().trim()
+            : partnerUsername;
+    final String sharedAuthorAvatarUrl = ApiConstants.getImageUrl(
+      msg['shared_author_avatar']?.toString(),
+    );
 
     final replyToId = int.tryParse(msg['reply_to_id']?.toString() ?? '0') ?? 0;
-    final replyText = msg['reply_text']?.toString().trim() ?? '';
+    final replyText = (msg['reply_text']?.toString().trim() ?? '')
+        .replaceAll(RegExp(r'\?{3,}\s*'), '')
+        .trim();
     final replyImage = msg['reply_image']?.toString().trim() ?? '';
+    final replyImageUrl =
+        replyImage.isNotEmpty ? ApiConstants.getImageUrl(replyImage) : '';
     final replySenderId =
         int.tryParse(msg['reply_sender_id']?.toString() ?? '0') ?? 0;
     final replySenderUsername =
@@ -2162,147 +2182,281 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         replyToId > 0 && (replyText.isNotEmpty || replyImage.isNotEmpty);
 
     final String replyAuthorLabel = replySenderId == currentUserId
-        ? 'Anda'
+        ? 'diri sendiri'
         : '@$replySenderUsername';
 
-    final Widget bubbleContent = GestureDetector(
-      onTap: () => _showMessageActionSheet(
-        msg,
-        isMine: isMine,
-        partnerUsername: partnerUsername,
-      ),
-      onLongPress: () => _showMessageActionSheet(
-        msg,
-        isMine: isMine,
-        partnerUsername: partnerUsername,
-      ),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 265),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: isMine ? AppColors.deepForest : AppColors.warmIvory,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(14),
-            topRight: const Radius.circular(14),
-            bottomLeft: Radius.circular(isMine ? 14 : 4),
-            bottomRight: Radius.circular(isMine ? 4 : 14),
-          ),
-          border: isMine ? null : Border.all(color: AppColors.border),
-        ),
+    // 1. Bagian Kutipan Reply (Tanpa Card, minimalis dengan garis tipis di samping seperti Instagram DM)
+    Widget? replyHeaderWidget;
+    if (hasReply) {
+      replyHeaderWidget = Padding(
+        padding: const EdgeInsets.only(bottom: 5),
         child: Column(
           crossAxisAlignment:
               isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            // Kotak Kutipan Reply (jika pesan ini membalas pesan lain)
-            if (hasReply) ...[
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                margin: const EdgeInsets.only(bottom: 7),
-                decoration: BoxDecoration(
-                  color: isMine
-                      ? AppColors.pureWhite.withValues(alpha: 0.13)
-                      : AppColors.pureWhite,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border(
-                    left: BorderSide(
-                      color:
-                          isMine ? AppColors.softBeige : AppColors.sageGreen,
-                      width: 3,
-                    ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.reply_rounded,
+                  size: 12,
+                  color: AppColors.secondaryText,
+                ),
+                const Gap(4),
+                Text(
+                  'Membalas $replyAuthorLabel',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.secondaryText,
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      replyAuthorLabel,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isMine
-                            ? AppColors.softBeige
-                            : AppColors.deepForest,
-                      ),
+              ],
+            ),
+            const Gap(3),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isMine) ...[
+                  Container(
+                    width: 2.5,
+                    height: replyImageUrl.isNotEmpty ? 36 : 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Gap(2),
-                    Text(
-                      replyText.isNotEmpty ? replyText : '📷 Foto',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: isMine
-                            ? AppColors.pureWhite.withValues(alpha: 0.85)
-                            : AppColors.secondaryText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            // Lampiran Foto di dalam Bubble Chat
-            if (imageUrl.isNotEmpty) ...[
-              GestureDetector(
-                onTap: () => _openFullPhotoDialog(imageUrl, text),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxHeight: 220,
-                      minWidth: 160,
-                    ),
+                  ),
+                  const Gap(8),
+                ],
+                if (replyImageUrl.isNotEmpty && replyText.isEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
                     child: Image.network(
-                      imageUrl,
-                      width: double.infinity,
+                      replyImageUrl,
+                      width: 36,
+                      height: 36,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        height: 120,
-                        color: AppColors.mistGray,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.broken_image_outlined,
-                          color: AppColors.secondaryText,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: Text(
+                      replyText.isNotEmpty ? replyText : 'Foto',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ),
+                if (isMine) ...[
+                  const Gap(8),
+                  Container(
+                    width: 2.5,
+                    height: replyImageUrl.isNotEmpty ? 36 : 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 2. Konten Media (Postingan yang dibagikan / Foto langsung TANPA Card pembungkus)
+    Widget? mediaWidget;
+    if (imageUrl.isNotEmpty) {
+      if (isSharedPost) {
+        // Tampilan Kirim Postingan / Video seperti Gambar ke-2:
+        // Langsung gambar/video tanpa card biru, dengan foto profil & username kecil di bagian atas dalam gambar
+        final authorInitial = sharedAuthorUsername.isNotEmpty
+            ? sharedAuthorUsername[0].toUpperCase()
+            : 'U';
+
+        mediaWidget = GestureDetector(
+          onTap: () => _openFullPhotoDialog(imageUrl, ''),
+          onLongPress: () => _showMessageActionSheet(
+            msg,
+            isMine: isMine,
+            partnerUsername: partnerUsername,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: SizedBox(
+              width: 215,
+              height: 285,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      color: AppColors.warmIvory,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.broken_image_outlined,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ),
+                  // Gradasi halus di bagian atas agar foto profil & username selalu jelas
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 54,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.62),
+                            Colors.transparent,
+                          ],
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              if (text.isNotEmpty) const Gap(7),
-            ],
-
-            // Teks Pesan
-            if (text.isNotEmpty)
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: isMine ? AppColors.pureWhite : AppColors.primaryText,
-                  height: 1.4,
-                ),
-              ),
-
-            const Gap(4),
-
-            // Jam Pengiriman
-            Text(
-              isMine ? '$timeLabel • Terkirim' : timeLabel,
-              style: TextStyle(
-                fontSize: 10,
-                color: isMine
-                    ? AppColors.pureWhite.withValues(alpha: 0.72)
-                    : AppColors.secondaryText,
+                  // Foto profil kecil + username di atas gambar (persis Gambar ke-2)
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    right: 10,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: AppColors.warmIvory,
+                          backgroundImage: sharedAuthorAvatarUrl.isNotEmpty
+                              ? NetworkImage(sharedAuthorAvatarUrl)
+                              : null,
+                          child: sharedAuthorAvatarUrl.isEmpty
+                              ? Text(
+                                  authorInitial,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const Gap(7),
+                        Expanded(
+                          child: Text(
+                            sharedAuthorUsername,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
+        );
+      } else {
+        // Tampilan Kirim Foto Biasa: Langsung foto bersudut membulat tanpa Card biru/abu-abu
+        mediaWidget = GestureDetector(
+          onTap: () => _openFullPhotoDialog(imageUrl, text),
+          onLongPress: () => _showMessageActionSheet(
+            msg,
+            isMine: isMine,
+            partnerUsername: partnerUsername,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 215,
+                maxHeight: 270,
+              ),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 180,
+                  height: 140,
+                  color: AppColors.warmIvory,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 3. Bubble Teks Ringkas (Hanya muncul bila ada teks chat biasa, tanpa card besar)
+    Widget? textBubbleWidget;
+    if (text.isNotEmpty && !isSharedPost) {
+      textBubbleWidget = GestureDetector(
+        onTap: () => _showMessageActionSheet(
+          msg,
+          isMine: isMine,
+          partnerUsername: partnerUsername,
         ),
-      ),
+        onLongPress: () => _showMessageActionSheet(
+          msg,
+          isMine: isMine,
+          partnerUsername: partnerUsername,
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 245),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: isMine ? AppColors.deepForest : AppColors.warmIvory,
+            borderRadius: BorderRadius.circular(18),
+            border: isMine ? null : Border.all(color: AppColors.border),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13.5,
+              color: isMine ? Colors.white : AppColors.primaryText,
+              height: 1.35,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final Widget messageColumn = Column(
+      crossAxisAlignment:
+          isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (replyHeaderWidget != null) replyHeaderWidget,
+        if (mediaWidget != null) mediaWidget,
+        if (mediaWidget != null && textBubbleWidget != null) const Gap(6),
+        if (textBubbleWidget != null) textBubbleWidget,
+      ],
     );
 
-    // Tombol aksi cepat (Reply & Opsi Hapus) di samping bubble
+    // Tombol aksi cepat (Reply & Opsi Hapus) di samping pesan
     final Widget quickActions = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -2342,7 +2496,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         children: [
           quickActions,
           const Gap(4),
-          Flexible(child: bubbleContent),
+          Flexible(child: messageColumn),
         ],
       );
     } else {
@@ -2371,7 +2525,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 : null,
           ),
           const Gap(8),
-          Flexible(child: bubbleContent),
+          Flexible(child: messageColumn),
           const Gap(4),
           quickActions,
         ],

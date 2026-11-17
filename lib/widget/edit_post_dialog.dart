@@ -107,7 +107,7 @@ class _EditPostDialogState extends State<EditPostDialog> {
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                color: AppColors.pureWhite,
+                                color: Colors.white,
                                 strokeWidth: 2,
                               ),
                             )
