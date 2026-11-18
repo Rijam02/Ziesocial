@@ -453,9 +453,9 @@ class _CreateStorySheetState extends State<_CreateStorySheet> {
                         Text(
                           'Story Baru',
                           style: TextStyle(
-                            fontFamily: 'Georgia',
+                            fontFamily: 'Plus Jakarta Sans',
                             fontSize: 19,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primaryText,
                           ),
                         ),

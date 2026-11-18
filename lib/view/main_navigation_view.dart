@@ -150,12 +150,12 @@ class _MainNavigationViewState extends State<MainNavigationView> {
                           ),
                         ),
                       ),
-                      // 4. Pesan (forum)
+                      // 4. Pesan (Forum)
                       _buildNavItem(
                         index: 3,
                         icon: Icons.forum_outlined,
                         activeIcon: Icons.forum_rounded,
-                        label: 'forum',
+                        label: 'Forum',
                       ),
                       // 5. Profil
                       _buildNavItem(

@@ -420,29 +420,17 @@ class _PostCardState extends State<PostCard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                displayUsername,
-                                style: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: AppColors.onSurface,
-                                  height: 1.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const Gap(5),
-                            const Icon(
-                              Icons.verified_rounded,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                          ],
+                        Text(
+                          displayUsername,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: AppColors.onSurface,
+                            height: 1.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const Gap(2),
                         Text(
@@ -1303,9 +1291,9 @@ class _SharePostToFriendsBottomSheetState
                           Text(
                             'Kirim Postingan ke Teman',
                             style: TextStyle(
-                              fontFamily: 'Georgia',
+                              fontFamily: 'Plus Jakarta Sans',
                               fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.primaryText,
                             ),
                           ),

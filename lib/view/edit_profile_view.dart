@@ -153,9 +153,9 @@ class _EditProfileViewState extends State<EditProfileView> {
                   const Text(
                     'Edit Profil',
                     style: TextStyle(
-                      fontFamily: 'Georgia',
+                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primaryText,
                     ),
                   ),

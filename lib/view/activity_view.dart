@@ -192,9 +192,9 @@ class _ActivityViewState extends State<ActivityView> {
                         child: Text(
                           'Aktivitas',
                           style: TextStyle(
-                            fontFamily: 'Georgia',
+                            fontFamily: 'Plus Jakarta Sans',
                             fontSize: 22,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.4,
                             color: AppColors.primaryText,
                           ),
@@ -286,7 +286,7 @@ class _ActivityViewState extends State<ActivityView> {
                                   const Text(
                                     'Belum Ada Aktivitas Terbaru',
                                     style: TextStyle(
-                                      fontFamily: 'Georgia',
+                                      fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 17,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.primaryText,
@@ -407,7 +407,7 @@ class _ActivityViewState extends State<ActivityView> {
                                   child: RichText(
                                     text: TextSpan(
                                       style: const TextStyle(
-                                        fontFamily: 'Inter',
+                                        fontFamily: 'Plus Jakarta Sans',
                                         height: 1.4,
                                       ),
                                       children: [

@@ -94,22 +94,25 @@ class _SplashViewState extends State<SplashView>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
-                      alignment: Alignment.center,
+                      width: 88,
+                      height: 88,
                       decoration: BoxDecoration(
-                        color: AppColors.pureWhite,
-                        border: Border.all(color: AppColors.border, width: 1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.18),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                      child: const Text(
-                        'Z.',
-                        style: TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.deepForest,
-                          letterSpacing: -1,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 88,
+                          height: 88,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
@@ -117,9 +120,9 @@ class _SplashViewState extends State<SplashView>
                     const Text(
                       'ZieSocial',
                       style: TextStyle(
-                        fontFamily: 'Georgia',
+                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 38,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: -1.0,
                         color: AppColors.primaryText,
                       ),

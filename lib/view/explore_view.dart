@@ -110,9 +110,9 @@ class _ExploreViewState extends State<ExploreView> {
                       const Text(
                         'Sorotan Karya',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
+                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 17,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.primaryText,
                         ),
                       ),
@@ -216,9 +216,9 @@ class _ExploreViewState extends State<ExploreView> {
                       const Text(
                         'Eksplorasi',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
+                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: -0.4,
                           color: AppColors.primaryText,
                         ),

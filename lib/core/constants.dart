@@ -1,6 +1,6 @@
 class ApiConstants {
   // Base URL folder utama ZieSocial 
-  static const String rootUrl = 'http://localhost/ziesocial';
+  static const String rootUrl = 'https://haziness-steep-jingling.ngrok-free.dev/ziesocial';
 
   // Base URL API
   static String get baseUrl => '$rootUrl/api';

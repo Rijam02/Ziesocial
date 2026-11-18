@@ -315,7 +315,7 @@ class _AccountSettingsViewState extends State<AccountSettingsView> {
                   const Text(
                     'Pengaturan Akun',
                     style: TextStyle(
-                      fontFamily: 'Georgia',
+                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18.5,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primaryText,

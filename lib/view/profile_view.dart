@@ -371,9 +371,9 @@ class _ProfileViewState extends State<ProfileView> {
                       const Text(
                         'Detail Postingan',
                         style: TextStyle(
-                          fontFamily: 'Georgia',
+                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 17,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.primaryText,
                         ),
                       ),
@@ -495,12 +495,6 @@ class _ProfileViewState extends State<ProfileView> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const Gap(4),
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 18,
-                                color: AppColors.primaryContainer,
                               ),
                             ],
                           ),
@@ -734,28 +728,16 @@ class _ProfileViewState extends State<ProfileView> {
                                     const Gap(16),
 
                                     // User Information & Bio Section
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            displayedName,
-                                            style: const TextStyle(
-                                              fontFamily: 'Plus Jakarta Sans',
-                                              fontSize: 16,
-                                              height: 24 / 16,
-                                              fontWeight: FontWeight.w700,
-                                              letterSpacing: -0.16,
-                                              color: AppColors.onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        const Gap(4),
-                                        const Icon(
-                                          Icons.verified_rounded,
-                                          size: 16,
-                                          color: AppColors.primaryContainer,
-                                        ),
-                                      ],
+                                    Text(
+                                      displayedName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 16,
+                                        height: 24 / 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.16,
+                                        color: AppColors.onSurface,
+                                      ),
                                     ),
 
                                     // Bio Copywriting
@@ -1268,7 +1250,7 @@ class _ProfileViewState extends State<ProfileView> {
     VoidCallback? onTap,
   }) {
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1276,23 +1258,23 @@ class _ProfileViewState extends State<ProfileView> {
             count,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 16,
-              height: 24 / 16,
-              letterSpacing: -0.16,
+              fontSize: 19,
+              height: 24 / 19,
+              letterSpacing: -0.2,
               fontWeight: FontWeight.w700,
               color: AppColors.onSurface,
             ),
           ),
-          const Gap(2),
+          const Gap(3),
           Text(
             label,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 10,
-              height: 14 / 10,
-              letterSpacing: 0.4,
+              fontSize: 12.5,
+              height: 16 / 12.5,
+              letterSpacing: 0.1,
               color: AppColors.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

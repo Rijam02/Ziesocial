@@ -11,10 +11,12 @@ class LoginViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   UserModel? _user;
+  String? _token;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   UserModel? get user => _user;
+  String? get token => _token;
   bool get isLoggedIn => _user != null;
 
   void setUser(UserModel user) {
@@ -39,15 +41,29 @@ class LoginViewModel extends ChangeNotifier {
           'password': password,
         },
       );
+
+      final receivedToken = response['token'];
+
+      if (receivedToken is! String || receivedToken.isEmpty) {
+        throw Exception('Token login tidak ditemukan.');
+      }
+
+      _token = receivedToken;
       _user = UserModel.fromJson(response['user']);
+
       return true;
     } catch (e) {
+      _token = null;
+      _user = null;
+
       String msg = e.toString();
+
       if (msg.startsWith('Exception: ')) {
         msg = msg.substring('Exception: '.length);
       } else if (msg.startsWith('FormatException: ')) {
         msg = msg.substring('FormatException: '.length);
       }
+
       _errorMessage = msg;
       return false;
     } finally {
@@ -58,6 +74,8 @@ class LoginViewModel extends ChangeNotifier {
 
   void logout() {
     _user = null;
+    _token = null;
+
     notifyListeners();
   }
-}
+}

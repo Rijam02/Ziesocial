@@ -20,9 +20,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  static const String _logoUrl =
-      'https://lh3.googleusercontent.com/aida/ALJJyrAGz0ngow3as-1-re5ci2YrUi5fcQVaSwLyJuphJXXcEeZCsLYn1KWDiOWWi8n8QFxhfWPHifPhM973z39xjzRvUFc70o1PmKvKzdcfe7O0PHkczjocI9iCpf5giaF2_R9nULtM_F0XtZQmX9kjfBpU_QXPK2uhne2dmPzIiMv-LnTDmjV4H3WlH44_P8wQGggIjaqhrgY7_R4h43bMywuhZCS1eY1I9TgCpjXZi7BayQ';
-
   Timer? _notificationPoller;
 
   @override
@@ -120,38 +117,26 @@ class _HomeViewState extends State<HomeView> {
                         Row(
                           children: [
                             Container(
-                              width: 32,
-                              height: 32,
-                              padding: const EdgeInsets.all(6),
+                              width: 34,
+                              height: 34,
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.surfaceContainer,
-                                  width: 1,
-                                ),
+                                borderRadius: BorderRadius.circular(9),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.onSurface
-                                        .withValues(alpha: 0.04),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.16),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: Image.network(
-                                _logoUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) => const Center(
-                                  child: Text(
-                                    'Z',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  width: 34,
+                                  height: 34,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
                             ),

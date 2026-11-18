@@ -69,10 +69,10 @@ class AppColors {
 }
 
 class AppTheme {
+  static const String fontFamily = 'Plus Jakarta Sans';
+
   static const List<String> _fontFallback = [
     'Plus Jakarta Sans',
-    'Inter',
-    'Segoe UI',
     'Roboto',
     'sans-serif',
   ];
@@ -81,7 +81,7 @@ class AppTheme {
     final baseTextTheme = ThemeData.light().textTheme.apply(
           bodyColor: AppColors.onSurface,
           displayColor: AppColors.onSurface,
-          fontFamily: 'Plus Jakarta Sans',
+          fontFamily: fontFamily,
           fontFamilyFallback: _fontFallback,
         );
 
@@ -89,9 +89,10 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.surface,
-      fontFamily: 'Plus Jakarta Sans',
+      fontFamily: fontFamily,
       fontFamilyFallback: _fontFallback,
       textTheme: baseTextTheme,
+      primaryTextTheme: baseTextTheme,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: Colors.white,
@@ -127,6 +128,18 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.onSurfaceVariant,
+        selectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
         showSelectedLabels: true,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
@@ -143,11 +156,22 @@ class AppTheme {
           color: AppColors.inverseOnSurface,
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
-          fontFamily: 'Plus Jakarta Sans',
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontFamilyFallback: _fontFallback,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -159,7 +183,8 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           textStyle: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: fontFamily,
+            fontFamilyFallback: _fontFallback,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -174,7 +199,8 @@ class AppTheme {
           side: const BorderSide(color: AppColors.surfaceContainerHighest, width: 1),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           textStyle: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: fontFamily,
+            fontFamilyFallback: _fontFallback,
             fontSize: 13.5,
             fontWeight: FontWeight.w600,
           ),
@@ -188,16 +214,22 @@ class AppTheme {
         fillColor: AppColors.surfaceContainerLow,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
           color: AppColors.outline,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
         labelStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
           color: AppColors.onSurfaceVariant,
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
         ),
         floatingLabelStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
           color: AppColors.primary,
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -222,6 +254,20 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surfaceContainerLowest,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: AppColors.onSurface,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontFamilyFallback: _fontFallback,
+          color: AppColors.onSurfaceVariant,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.surfaceContainer, width: 1),

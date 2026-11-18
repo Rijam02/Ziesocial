@@ -32,9 +32,6 @@ class _LoginViewState extends State<LoginView> {
   static const Color _error = Color(0xFFBA1A1A);
   static const Color _errorContainer = Color(0xFFFFDAD6);
 
-  static const String _logoUrl =
-      'https://lh3.googleusercontent.com/aida/ALJJyrAGz0ngow3as-1-re5ci2YrUi5fcQVaSwLyJuphJXXcEeZCsLYn1KWDiOWWi8n8QFxhfWPHifPhM973z39xjzRvUFc70o1PmKvKzdcfe7O0PHkczjocI9iCpf5giaF2_R9nULtM_F0XtZQmX9kjfBpU_QXPK2uhne2dmPzIiMv-LnTDmjV4H3WlH44_P8wQGggIjaqhrgY7_R4h43bMywuhZCS1eY1I9TgCpjXZi7BayQ';
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
@@ -181,40 +178,23 @@ class _LoginViewState extends State<LoginView> {
                           Container(
                             width: 80,
                             height: 80,
-                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _surfaceContainerLowest,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _onSurface.withValues(alpha: 0.08),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
+                                  color: _primary.withValues(alpha: 0.18),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
-                            child: Image.network(
-                              _logoUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [_primary, _primaryContainer],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  'Z',
-                                  style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
@@ -440,7 +420,6 @@ class _LoginViewState extends State<LoginView> {
                                 color: _onSurface,
                               ),
                               decoration: InputDecoration(
-                                hintText: '••••••••',
                                 hintStyle: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
                                   fontSize: 14,
